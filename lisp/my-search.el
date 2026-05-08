@@ -32,7 +32,7 @@
 ;;; Helper Functions
 ;; ======================================
 
-(defun my/--get-search-url (engine query)
+(defun my/get-search-url (engine query)
   "Generate a search URL from a search engine and a query."
   (let ((config (assoc engine my/search-engines)))
     (when config
@@ -41,7 +41,7 @@
             (concat "dict://" (url-hexify-string query))
           (format url-template (url-hexify-string query)))))))
 
-(defun my/--open-url (url)
+(defun my--open-url (url)
   "Open URL in the default web browser or macOS Dictionary."
   (if (string-prefix-p "dict://" url)
       (call-process "open" nil 0 nil url)
@@ -49,7 +49,7 @@
 
 (defun my/fd-filename-search (query)
   "Search file names using fd (NFD-safe on macOS).
-QUERY: 검색어. 경로는 my/search-path-targets 에서 선택."
+QUERY: 검색어. 경로는 my-search-path-targets 에서 선택."
   (let* ((path-choice (completing-read "Search in: "
                                        (mapcar #'car my/search-path-targets)
                                        nil t))
@@ -107,10 +107,10 @@ QUERY: 검색어. 경로는 my/search-path-targets 에서 선택."
                     (if page-num
                         (do-applescript
                          (format "tell application \"Skim\"
-    activate
-    open POSIX file \"%s\"
-    tell front document to go to page %d
-end tell" full-path page-num))
+                                       activate
+                                       open POSIX file \"%s\"
+                                       tell front document to go to page %d
+                                  end tell" full-path page-num))
                       (call-process "open" nil 0 nil full-path)))
                   (throw 'exit nil))
               (quit (message "파일 목록으로 복귀")))))))))
@@ -139,9 +139,9 @@ Select between Web engines or Local paths for the given QUERY."
 
      ;; CASE 2: Web Engine Selection
      (web-config
-      (let ((url (my/--get-search-url choice search-term)))
+      (let ((url (my/get-search-url choice search-term)))
         (if (and url (not (string-empty-p url)))
-            (my/--open-url url)
+            (my--open-url url)
           (message "Invalid URL configuration."))))
      
      ;; CASE 3: Local PDF Path Selection
@@ -154,12 +154,6 @@ Select between Web engines or Local paths for the given QUERY."
         (consult-ripgrep default-directory search-term)))
      
      (t (message "Unknown selection.")))))
-
-;;; ###autoload
-(defun my/search-weather ()
-  "Search weather info."
-  (interactive)
-  (my/show-weather))
 
 ;; ======================================
 ;;; Embark Integration

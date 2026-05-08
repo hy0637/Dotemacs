@@ -157,7 +157,6 @@
 
   :hook ((text-mode     . visual-line-mode))
          ;; (focus-in-hook . my/deactivate-input-method))
-
   
   :custom
   ;; Win
@@ -276,19 +275,21 @@
 ;; =======================================
 (use-package emacs
   :init
-  (setenv "LANG" "ko_KR.UTF-8")                     ;외부 프로세스용
+  (setenv "LANG" "ko_KR.UTF-8")
   (setenv "LC_COLLATE" "C")
-  (set-locale-environment "ko_KR.UTF-8")            ;내부 프로세스용
-  ;; set-locale-environment가 "korean-hangul"을 심기 전에 테이블 교체
-  (set-language-info "Korean" 'input-method "korean-my-hangul")
-  (setq default-input-method "korean-my-hangul") ; ← 이중 방어
+  (set-locale-environment "en_US.UTF-8")
+  (setq system-time-locale "ko_KR.UTF-8")
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
   :custom
   (input-method-verbose-flag nil)
-  (input-method-highlight-flag nil))
+  (input-method-highlight-flag nil)
+  :hook
+  (after-init . (lambda ()
+                  (setq default-input-method "korean-my-hangul")))
+  :bind("S-SPC". toggle-input-method))
 
 
 ;; =======================================

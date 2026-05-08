@@ -91,7 +91,8 @@
 
 (defun my/keyboard-quit-dwim ()
   "Do-what-I-mean quit behavior.
-Handle 'keyboard-quit' based on the current context, such as an active region, open minibuffer, or the Completions buffer."
+Handle 'keyboard-quit' based on the current context, such as an active region, open minibuffer,
+or the Completions buffer."
   (interactive)
   (cond
    ((region-active-p)                      ; 1. 블록이 잡혀있으면 블록 해제
@@ -303,6 +304,52 @@ Kills any running caffeinate process started by caffeine-on."
   (interactive)
   (shell-command "pkill caffeinate")
   (message "Caffeine OFF"))
+
+
+;;;###autoload
+(defun my/buffer-to-pdf-pandoc ()
+  "Convert the current buffer to PDF using Pandoc.
+Code files (.el, .py, .sh, etc.) are wrapped in a Markdown code block
+and converted via a temporary .md file, which is deleted after conversion.
+Other formats (.org, .md, etc.) are passed directly to Pandoc.
+Requires pandoc and xelatex to be installed."
+  (interactive)
+  (let* ((input (buffer-file-name))
+         (ext (and input (file-name-extension input)))
+         (output (and input (concat (file-name-sans-extension input) ".pdf")))
+         (code-exts '("el" "py" "sh" "js" "ts" "rb" "c" "h" "swift"))
+         (pandoc-cmd
+          (lambda (src)
+            (format (concat "pandoc %s -o %s"
+                            " --pdf-engine=xelatex"
+                            " --highlight-style=tango"
+                            " -V mainfont='KoPubWorldBatang'"
+                            " -V sansfont='KoPubWorldDotum'"
+                            " -V monofont='D2Coding'"
+                            " -V geometry:margin=1.5cm"
+			    " -V linestretch=1.4")
+                    src output))))
+    (cond
+     ((null input)
+      (message "Buffer is not associated with a file."))
+     ((member ext code-exts)
+      (let ((tmp-md (make-temp-file "emacs-print-" nil ".md")))
+        (with-temp-file tmp-md
+          (insert (format "# %s\n\n```%s\n"
+                          (file-name-nondirectory input)
+                          (cond ((string= ext "el") "scheme")
+                                (t ext))))
+          (insert-file-contents input)
+          (goto-char (point-max))
+          (insert "\n```\n"))
+        (unwind-protect
+            (call-process-shell-command (funcall pandoc-cmd tmp-md) nil nil nil)
+          (delete-file tmp-md))))
+     (t
+      (call-process-shell-command (funcall pandoc-cmd input) nil nil nil)))
+    (when output
+      (shell-command (format "open %s" (shell-quote-argument output)))
+      (message "PDF saved: %s" output))))
 
 
 (provide 'my-useful-custom)

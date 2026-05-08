@@ -46,6 +46,7 @@
   ("r" "Regexp replace"     #'my/query-replace-regexp-dwim)
   ("c" "Current line"       #'my/select-current-line)
   ("d" "Duplicate"          #'my/duplicate-dwim)
+  ("p" "buffer2PDF"         #'my/buffer-to-pdf-pandoc)
   ("w" "Pairs wrap"         #'my/pair-pairs-wrap)
   ("%" "Replace"            #'query-replace))
 
@@ -54,8 +55,7 @@
   ("l" "Line"               #'consult-line)
   ("o" "Outline"            #'consult-outline)
   ("u" "Unified search"     #'my/search-unified)
-  ("m" "Imenu"              #'consult-imenu)
-  ("w" "Weather"            #'my/search-weather))
+  ("m" "Imenu"              #'consult-imenu))
 
 (my/defkeymap my-life-prefix-map "Life"
   ("l" "Lunar date"         #'my/show-lunar-date)
