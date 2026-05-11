@@ -49,7 +49,7 @@
 
 (defun my/fd-filename-search (query)
   "Search file names using fd (NFD-safe on macOS).
-QUERY: 검색어. 경로는 my-search-path-targets 에서 선택."
+QUERY: 검색어. 경로는 my/search-path-targets 에서 선택."
   (let* ((path-choice (completing-read "Search in: "
                                        (mapcar #'car my/search-path-targets)
                                        nil t))
