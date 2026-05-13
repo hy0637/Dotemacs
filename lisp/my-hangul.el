@@ -340,6 +340,61 @@ CURRENT: 키 문자열 리스트.
 ;;; Prefix 키 override (C-x, C-c 등 입력 시 한글 입력기 비활성화)
 ;;; ============================================================
 
+(defvar my-hangul--prefix-stage 'normal
+  "Prefix 키 처리 단계. 'normal 'prefix 'sequence 중 하나.")
+
+(defvar my-hangul--was-active-before-prefix nil
+  "Prefix 키 입력 직전 한글 활성 여부.")
+
+(defvar my-hangul--restore-timer nil
+  "복원용 타이머.")
+
+(defun my-hangul--restore ()
+  "타이머로 호출되어 한글 입력기를 복원."
+  (setq my-hangul--restore-timer nil)
+  (when (and my-hangul--was-active-before-prefix
+             (not current-input-method))
+    (activate-input-method "korean-my-hangul")
+    (setq my-hangul--was-active-before-prefix nil)))
+
+(defun my-hangul--pre-command ()
+  "pre-command-hook: prefix 키 감지 시 stage 전환."
+  (when (eq this-command #'my-hangul--prefix-override-handler)
+    (setq my-hangul--prefix-stage 'prefix)))
+
+(defun my-hangul--post-command ()
+  "post-command-hook: stage 관리 및 복원 타이머 실행."
+  (pcase my-hangul--prefix-stage
+    ('prefix
+     (setq my-hangul--prefix-stage 'sequence))
+    ('sequence
+     (cond
+      ((minibufferp)
+       (setq my-hangul--prefix-stage 'sequence))
+      (t
+       (setq my-hangul--prefix-stage 'normal)
+       (unless my-hangul--restore-timer
+         (setq my-hangul--restore-timer
+               (run-with-timer 0 nil #'my-hangul--restore))))))))
+
+(add-hook 'pre-command-hook  #'my-hangul--pre-command)
+(add-hook 'post-command-hook #'my-hangul--post-command)
+
+(defun my-hangul--prefix-override-handler (arg)
+  "Prefix 키(C-x, M-x 등) 입력 시 한글 비활성화 후 키를 Emacs에 전달."
+  (interactive "P")
+  (setq my-hangul--was-active-before-prefix
+        (string= current-input-method "korean-my-hangul"))
+  (my-hangul--flush)
+  (my-hangul--clear)
+  (deactivate-input-method)
+  (setq prefix-arg arg)
+  (prefix-command-preserve-state)
+  (setq unread-command-events
+        (append (mapcar (lambda (e) (cons t e))
+                        (listify-key-sequence (this-command-keys)))
+                unread-command-events)))
+
 (defvar my-hangul--prefix-override-map-enable nil
   "prefix override keymap 활성 여부.")
 
@@ -349,18 +404,7 @@ CURRENT: 키 문자열 리스트.
      ,(let ((map (make-sparse-keymap)))
         (dolist (prefix '("C-x" "C-c" "C-h" "M-x"))
           (define-key map (kbd prefix)
-                      (lambda (arg)
-                        (interactive "P")
-                        (my-hangul--flush)
-                        (my-hangul--clear)
-                        (deactivate-input-method)
-                        (setq prefix-arg arg)
-                        (prefix-command-preserve-state)
-                        (setq unread-command-events
-                              (append (mapcar (lambda (e) (cons t e))
-                                              (listify-key-sequence
-                                               (this-command-keys)))
-                                      unread-command-events)))))
+                      #'my-hangul--prefix-override-handler))
         map)))
   "prefix override keymap alist.")
 
