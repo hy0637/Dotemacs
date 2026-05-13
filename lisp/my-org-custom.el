@@ -124,7 +124,7 @@
   "선택 영역을 기호 쌍으로 감쌉니다.
 - 'm' 또는 '-' 입력 시: [기호][공백][영역][공백][기호]
 - '\"' 또는 '`' 입력 시: [여는 따옴표][영역][닫는 따옴표]"
-  (interactive "c기호 입력 (', \", -, m:):—")
+  (interactive (list (read-char "기호 입력 (', \", -, m): ")))
   (let* ((start (region-beginning))
          (end (region-end))
          (prefix "")
@@ -132,10 +132,10 @@
     (cond
      ;; 1. 쌍따옴표 처리
      ((equal char ?\")
-      (setq prefix """ suffix """))
+      (setq prefix (string #x201c) suffix (string #x201d)))
      ;; 2. 홑따옴표 처리
      ((equal char ?')
-      (setq prefix "'" suffix "'"))
+      (setq prefix (string #x2018) suffix (string #x2019)))
      ;; 3. 대시(Em-dash) 처리
      ((equal char ?m)
       (setq prefix "— " suffix " —"))
@@ -146,13 +146,32 @@
      (t
       (let ((s (char-to-string char)))
         (setq prefix s suffix s))))
-    
+
     (save-excursion
       (goto-char end)
       (insert suffix)
       (goto-char start)
       (insert prefix))))
 
+
+
+;;; ###autoload
+(defun my/org-insert-custom-prefix-to-blocks (beg end prefix)
+  "선택 영역 내의 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix)을 삽입합니다."
+  (interactive "r\ns삽입할 문구를 입력하세요: ") ; r은 영역, s는 문자열 입력을 의미합니다.
+  (save-excursion
+    (save-restriction
+      (narrow-to-region beg end)
+      (goto-char (point-min))
+      (while (not (eobp))
+        ;; 현재 줄이 공백이 아니고, Org-mode 예약어(#+)로 시작하지 않을 때만 실행
+        (when (and (not (looking-at "^\\s-*$"))
+                   (not (looking-at "^[ \t]*#\\+")))
+          (back-to-indentation)
+          (insert prefix))
+        (forward-line 1))))
+  (deactivate-mark)
+  (message "삽입 완료!" prefix))
 
 
 
@@ -340,7 +359,8 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
          ("M-,"       . org-insert-structure-template)
          ("C-,"       . my/org-wrap-with-symbol-smart)
          ("C-c C-x d" . my/org-insert-drawer-custom)
-	 ("C-c C-x C-f" . my/pair-pairs-wrap))          ;alternate org-emphasize
+         ("C-c C-x i" . my/org-insert-custom-prefix-to-blocks)
+	 ("C-c C-x C-f" . my/pair-pairs-wrap))        ;org-emphasize
   :custom
   (org-agenda-files                    (list my/f-tasks my/f-daily my/f-health))
   (org-startup-indented                t)

@@ -340,7 +340,7 @@
   :config
   (setq modus-themes-mixed-fonts t
         modus-themes-italic-constructs t)
-  (modus-themes-load-theme 'ef-eagle))
+  (modus-themes-load-theme 'ef-autumn))
 
 
 ;; =======================================
