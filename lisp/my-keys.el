@@ -16,27 +16,11 @@
                    (list (car binding) (cadr binding)))
                  bindings))))
 
-(defun my/deactivate-input-method (&rest _args)
-  "Deactivate current input method."
-  (when (and (boundp 'current-input-method) current-input-method)
-    (deactivate-input-method)))
-
 (defun my/prefix-with-ime-deactivation ()
-  "Deactivate IME and show master keymap."
+  "Show master keymap."
   (interactive)
-  (my/deactivate-input-method)
-  ;; my-hangul 내부 상태 강제 초기화
-  (when (and (boundp 'my-hangul--current) my-hangul--current)
-    (setq my-hangul--current nil)
-    (setq my-hangul--preedit 0))
   (which-key-show-keymap 'my-emacs-prefix-map my-emacs-prefix-map)
-  (set-transient-map my-emacs-prefix-map
-                     (lambda ()
-                       (when (my-hangul-event-p last-input-event)
-                         (message "한글 입력 중 — 영문으로 전환 후 단축키를 입력하세요 [event: #x%X]"
-                                  last-input-event)
-                         t))
-                     nil))
+  (set-transient-map my-emacs-prefix-map nil nil))
 
 ;; ======================================
 ;;; Keymap Definitions
