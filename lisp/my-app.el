@@ -7,8 +7,7 @@
 ;;; magit
 ;; =======================================
 (use-package magit
-  :if my-Macbook-p
-  :ensure nil
+  :ensure t
   :bind ("C-x g" . magit-status)
   :custom
   ;; Magit이 전체 화면을 차지하지 않고, 현재 창 구성을 최대한 유지
