@@ -25,7 +25,7 @@
 (defvar nokdong-tide-obs-code "SO_0761" 
   "Nokdong port observation code for tide forecast API.")
 
-(defvar my-weather-location "북부동" 	;도양읍
+(defvar my-weather-location "도양읍"
   "Default location for weather information.")
 
 (defvar my-weather-format-template "- %s, 최저/최고 %s/%s, 어제보다 %s"
@@ -414,6 +414,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
         (beginning-of-line)
         
         (let ((map (make-sparse-keymap)))
+          (set-keymap-parent map (current-local-map))
           (define-key map (kbd "q") 
             (lambda () (interactive) (kill-this-buffer)))
           (use-local-map map))))
@@ -451,6 +452,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
         (insert (car tide-tomorrow))
         (goto-char (point-min))
         (let ((map (make-sparse-keymap)))
+          (set-keymap-parent map (current-local-map))
           (define-key map (kbd "q")
             (lambda () (interactive) (kill-this-buffer)))
           (use-local-map map))))
@@ -479,6 +481,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
                                   (concat "- " trimmed))))))))
         (goto-char (point-min))
         (let ((map (make-sparse-keymap)))
+          (set-keymap-parent map (current-local-map))
           (define-key map (kbd "q")
             (lambda () (interactive) (kill-this-buffer)))
           (define-key map (kbd "r")
@@ -504,6 +507,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
           (insert "\n")
           (goto-char (point-min))
           (let ((map (make-sparse-keymap)))
+          (set-keymap-parent map (current-local-map))
             (define-key map (kbd "q")
               (lambda () (interactive) (kill-this-buffer)))
             (define-key map (kbd "r")
