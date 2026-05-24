@@ -70,8 +70,8 @@
          ;; ("M-." . embark-dwim)        ;; 알아서 가장 적절한 '행동' 수행
          ("C-h B" . embark-bindings)) ;; 현재 모드에서 가능한 모든 키 바인딩 확인
   :init
-  (setq prefix-help-command #'embark-prefix-help-command)         ;; 미니버퍼 내에서 도움말 가능하도록
-  (advice-add 'embark-act :before #'my/deactivate-input-method))  ;; 기본(en) input-method 전환
+  (setq prefix-help-command #'embark-prefix-help-command))         ;; 미니버퍼 내에서 도움말 가능하도록
+
 
 (use-package embark-consult
   :ensure t

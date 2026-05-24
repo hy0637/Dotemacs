@@ -17,6 +17,8 @@
 ;; C-x, C-c, C-h, M-x 입력 시 자동 영문 전환
 ;; 미니버퍼 한글 입력 가능 (read-string 등)
 ;; C-x p p 후 명령 선택은 prefix override가 처리
+;; M-F9 → 커서 직전 글자 한자 변환
+
 
 (require 'quail)
 (require 'hanja-util)
@@ -261,6 +263,23 @@ CURRENT: 키 문자열 리스트.
       (delete-char -1)
       (insert (string hanja)))))
 
+(defun my-hangul-to-hanja-at-point ()
+  "커서 직전 한글 글자를 한자 후보 목록에서 선택하여 변환 (M-F9)."
+  (interactive)
+  (let* ((end (point))
+         (start (1- end))
+         (char-str (if (>= start (point-min))
+                       (buffer-substring-no-properties start end)
+                     "")))
+    (if (not (string-match-p "^[가-힣]$" char-str))
+        (message "커서 직전 문자가 한글이 아닙니다.")
+      (let* ((char (string-to-char char-str))
+             (hanja (hangul-to-hanja-char char)))
+        (if (not hanja)
+            (message "'%s'에 해당하는 한자가 없습니다." char-str)
+          (delete-char -1)
+          (insert (string hanja)))))))
+
 ;;; ============================================================
 ;;; Process / Flush / Backspace
 ;;; ============================================================
@@ -387,6 +406,7 @@ CURRENT: 키 문자열 리스트.
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))
   (setq-local input-method-function #'my-hangul-input-method)
+  (global-set-key (kbd "<M-f9>") #'my-hangul-to-hanja-at-point)
   (setq my-hangul--prefix-override-map-enable t))
 
 (defun my-hangul-deactivate ()
@@ -397,7 +417,7 @@ CURRENT: 키 문자열 리스트.
 
 (register-input-method
  "korean-my-hangul" "Korean" #'my-hangul-activate "한2"
- "두벌식 한글 입력기 (NavilIME 포팅)")
+ "두벌식 한글 입력기")
 
 (provide 'my-hangul)
 ;;; my-hangul.el ends here

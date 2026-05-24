@@ -295,32 +295,25 @@
 ;; =======================================
 ;;; Fonts
 ;; =======================================  
+(defun my-org-fixed-pitch-faces ()
+  (dolist (face '(org-table org-code org-block
+                  org-block-begin-line org-block-end-line
+                  org-checkbox org-date org-link org-quote))
+    (set-face-attribute face nil
+                        :family "D2Coding"
+                        :inherit 'fixed-pitch)))
+
 (use-package emacs
-  ;; :if (display-graphic-p)
   :config
   (set-face-attribute 'default nil :family "Menlo" :height 180)
   (set-face-attribute 'fixed-pitch nil :family "Menlo" :height 1.0)
-  (set-fontset-font t 'hangul (font-spec :family "Noto Sans Mono CJK KR"))
   (set-face-attribute 'variable-pitch nil :family "Noto Sans CJK KR" :height 1.0)
-  (set-fontset-font "fontset-default" 'hangul 
-                    (font-spec :family "Noto Sans CJK KR") 
-                    nil 'prepend)
-  (setq face-font-rescale-alist '(("Noto Sans Mono CJK KR" . 0.95)
-                                  ("Noto Sans CJK KR" . 0.95)))
-
+  ;; (setq face-font-rescale-alist '(("D2Coding" . 1.0)
+                                  ;; ("Noto Sans CJK KR" . 0.95)))
   (add-hook 'org-mode-hook
             (lambda ()
               (variable-pitch-mode 1)
-              (mapc (lambda (face)
-                      (set-face-attribute face nil :inherit 'fixed-pitch))
-                    '(org-table
-                      org-code 
-                      org-block 
-                      org-block-begin-line 
-                      org-block-end-line 
-                      org-checkbox 
-                      org-date 
-                      org-link)))))
+              (my-org-fixed-pitch-faces))))
 
 
 ;; =======================================

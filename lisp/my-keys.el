@@ -29,7 +29,7 @@
   ("i" "Indent dwim"         #'my/simple-indent-dwim)
   ("r" "Regexp replace"      #'my/query-replace-regexp-dwim)
   ("c" "Current line"        #'my/select-current-line)
-  ("d" "Duplicate"           #'my/duplicate-dwim)
+  ("d" "Duplicate"           #'duplicate-dwim)
   ("p" "buffer2PDF"          #'my/buffer-to-pdf-pandoc)
   ("w" "Pairs wrap"          #'my/pair-pairs-wrap)
   ("%" "Replace"             #'query-replace))

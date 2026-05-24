@@ -29,19 +29,19 @@
 
 
 ;;; ###autoload
-(defun my/duplicate-dwim ()
-  "Duplicate the current region if active, otherwise duplicate the current line."
-  (interactive)
-  (let ((use-region (use-region-p)))
-    (save-excursion
-      (let ((text (if use-region
-                      (buffer-substring (region-beginning) (region-end))
-                    (filter-buffer-substring (line-beginning-position) (line-end-position)))))
-        (goto-char (if use-region (region-end) (line-end-position)))
-        (newline)
-        (insert text)))
-    ;; Move cursor to the next line for consecutive duplication
-    (forward-line 1)))
+;; (defun my/duplicate-dwim ()
+;;   "Duplicate the current region if active, otherwise duplicate the current line."
+;;   (interactive)
+;;   (let ((use-region (use-region-p)))
+;;     (save-excursion
+;;       (let ((text (if use-region
+;;                       (buffer-substring (region-beginning) (region-end))
+;;                     (filter-buffer-substring (line-beginning-position) (line-end-position)))))
+;;         (goto-char (if use-region (region-end) (line-end-position)))
+;;         (newline)
+;;         (insert text)))
+;;     ;; Move cursor to the next line for consecutive duplication
+;;     (forward-line 1)))
 
 
 ;;; ###autoload
