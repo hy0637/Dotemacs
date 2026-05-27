@@ -30,6 +30,7 @@
   ("r" "Regexp replace"      #'my/query-replace-regexp-dwim)
   ("c" "Current line"        #'my/select-current-line)
   ("d" "Duplicate"           #'duplicate-dwim)
+  ("o" "Open newline below"  #'my/open-line-below)
   ("p" "buffer2PDF"          #'my/buffer-to-pdf-pandoc)
   ("w" "Pairs wrap"          #'my/pair-pairs-wrap)
   ("%" "Replace"             #'query-replace))

@@ -29,6 +29,15 @@
 
 
 ;;; ###autoload
+(defun my/open-line-below ()
+  "Open a new line below the current line and move point there."
+  (interactive)
+  (end-of-line)
+  (newline-and-indent))
+
+(global-set-key (kbd "C-c o") 'my/open-line-below)
+
+;;; ###autoload
 ;; (defun my/duplicate-dwim ()
 ;;   "Duplicate the current region if active, otherwise duplicate the current line."
 ;;   (interactive)

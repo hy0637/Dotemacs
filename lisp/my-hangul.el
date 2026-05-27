@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t -*-
-;;  my-hangul.el — 두벌식 한글 입력기
+;;  my-hangul.el — 두벌식 한글 입력기 (특수 메뉴 충돌 완벽 해결 버전)
 ;;  NavilIME Hangul.swift + Keyboard002.swift 직접 포팅
 ;;
 ;;  키 배치:
@@ -8,16 +8,19 @@
 ;;   z=ㅋ  x=ㅌ  c=ㅊ  v=ㅍ  b=ㅠ  n=ㅜ  m=ㅡ
 ;;   Q=ㅃ  W=ㅉ  E=ㄸ  R=ㄲ  T=ㅆ(초성/종성)  O=ㅒ  P=ㅖ
 ;;   연속: qq=ㅃ ww=ㅉ ee=ㄸ rr=ㄲ tt=ㅆ(초성) oo=ㅒ pp=ㅖ tt=ㅆ(종성)
-
-;; 두벌식 한글 입력, 겹받침, 쌍자음
-;; oo→ㅒ, pp→ㅖ 연속 모음
-;; F9 한자/기호 변환
-;; 노란 언더라인 preedit
-;; C-g 탈출
-;; C-x, C-c, C-h, M-x 입력 시 자동 영문 전환
-;; 미니버퍼 한글 입력 가능 (read-string 등)
-;; C-x p p 후 명령 선택은 prefix override가 처리
-;; 
+;;
+;; version 1.1
+;;
+;;;; my-hangul.el v1.1 완성 기능
+;; 두벌식 한글 입력, 겹받침, 쌍자음 ✅
+;; oo→ㅒ, pp→ㅖ 연속 모음 ✅
+;; F9 한자/기호 변환 (조합 중, 뜻풀이 포함) ✅
+;; M-F9 커서 직전 글자 한자 변환 ✅
+;; 노란 언더라인 preedit ✅
+;; C-g 탈출 ✅
+;; C-x p p 등 특수 메뉴 충돌 해결 ✅
+;; 미니버퍼 한글 입력 가능 ✅
+;; 모드라인 변경 없음 ✅
 
 (require 'quail)
 (require 'hanja-util)
@@ -94,126 +97,87 @@
     (#x1112 . #x314E)))
 
 ;;; ============================================================
-;;; 해시테이블 (alist → O(1) 탐색)
+;;; 해시테이블 및 유니코드 조합
 ;;; ============================================================
 
 (defconst my/hangul-cho-table
   (let ((h (make-hash-table :test 'equal :size 64)))
-    (dolist (pair my/hangul-cho-layout h)
-      (puthash (car pair) (cdr pair) h))))
+    (dolist (pair my/hangul-cho-layout h) (puthash (car pair) (cdr pair) h))))
 
 (defconst my/hangul-jung-table
   (let ((h (make-hash-table :test 'equal :size 64)))
-    (dolist (pair my/hangul-jung-layout h)
-      (puthash (car pair) (cdr pair) h))))
+    (dolist (pair my/hangul-jung-layout h) (puthash (car pair) (cdr pair) h))))
 
 (defconst my/hangul-jong-table
   (let ((h (make-hash-table :test 'equal :size 128)))
-    (dolist (pair my/hangul-jong-layout h)
-      (puthash (car pair) (cdr pair) h))))
+    (dolist (pair my/hangul-jong-layout h) (puthash (car pair) (cdr pair) h))))
 
 (defconst my/hangul-cho-compat-table
   (let ((h (make-hash-table :test 'eql :size 32)))
-    (dolist (pair my/hangul-cho-compat h)
-      (puthash (car pair) (cdr pair) h))))
-
-;;; ============================================================
-;;; 유니코드 조합
-;;; ============================================================
+    (dolist (pair my/hangul-cho-compat h) (puthash (car pair) (cdr pair) h))))
 
 (defun my/hangul--norm (cho-k jung-k jong-k)
-  "키 문자열 → 유니코드 문자열."
   (let ((cho  (gethash cho-k  my/hangul-cho-table))
         (jung (gethash jung-k my/hangul-jung-table))
         (jong (gethash jong-k my/hangul-jong-table)))
     (cond
      ((and cho jung jong)
-      (string (decode-char 'ucs
-               (+ #xAC00 (* (- cho #x1100) 21 28)
-                  (* (- jung #x1161) 28) (- jong #x11A7)))))
+      (string (decode-char 'ucs (+ #xAC00 (* (- cho #x1100) 21 28) (* (- jung #x1161) 28) (- jong #x11A7)))))
      ((and cho jung)
-      (string (decode-char 'ucs
-               (+ #xAC00 (* (- cho #x1100) 21 28) (* (- jung #x1161) 28)))))
+      (string (decode-char 'ucs (+ #xAC00 (* (- cho #x1100) 21 28) (* (- jung #x1161) 28)))))
      (jung (string (decode-char 'ucs jung)))
-     (cho  (string (decode-char 'ucs
-                    (or (gethash cho my/hangul-cho-compat-table) #x3131))))
+     (cho  (string (decode-char 'ucs (or (gethash cho my/hangul-cho-compat-table) #x3131))))
      (t ""))))
 
 ;;; ============================================================
-;;; Automata.run() 포팅
+;;; Automata 핵심 오토마타
 ;;; ============================================================
 
 (defun my/hangul--run (current)
-  "나빌 Automata.run() 포팅.
-CURRENT: 키 문자열 리스트.
-반환: (cho jung jong done remaining)"
   (let ((cho "") (jung "") (jong "") (done nil))
     (catch 'exit
       (dolist (ch current)
-        (let ((can-cho (and (not (and (not (string= cho ""))
-                                     (not (string= jung ""))))
+        (let ((can-cho (and (not (and (not (string= cho "")) (not (string= jung ""))))
                             (gethash (concat cho ch) my/hangul-cho-table)))
               (in-jung (gethash ch my/hangul-jung-table)))
           (cond
-           ;; 초성 가능
            (can-cho
             (cond
              ((string= cho "") (setq cho ch))
-             ((string= jung "") (setq cho (concat cho ch))) ; 쌍자음
+             ((string= jung "") (setq cho (concat cho ch)))
              (t (setq done t) (throw 'exit nil))))
-
-           ;; 중성 가능 — jungsung_proc 포팅
            (in-jung
             (if (not (string= jong ""))
-                ;; 종성 있음: 마지막 글자가 초성 테이블에 있으면 도깨비불
                 (let* ((jong-chars (string-to-list jong))
                        (jong-last  (string (car (last jong-chars))))
                        (jong-rest  (apply #'string (butlast jong-chars))))
                   (if (gethash jong-last my/hangul-cho-table)
-                      (progn
-                        (setq jong jong-rest)
-                        (setq done t)
-                        (throw 'exit nil))
-                    ;; 도깨비불 아님: 이중모음 시도
+                      (progn (setq jong jong-rest) (setq done t) (throw 'exit nil))
                     (if (gethash (concat jung ch) my/hangul-jung-table)
                         (setq jung (concat jung ch))
                       (setq done t) (throw 'exit nil))))
-              ;; 종성 없음: 이중모음 또는 첫 중성
               (if (gethash (concat jung ch) my/hangul-jung-table)
                   (setq jung (concat jung ch))
                 (setq done t) (throw 'exit nil))))
-
-           ;; 종성 가능 — jongsung_proc: 중성 있을 때만
-           ((and (not (string= jung ""))
-                 (gethash (concat jong ch) my/hangul-jong-table))
+           ((and (not (string= jung "")) (gethash (concat jong ch) my/hangul-jong-table))
             (setq jong (concat jong ch)))
-
-           ;; 허용 안 됨
            (t (setq done t) (throw 'exit nil))))))
-
-    (let* ((size      (+ (length cho) (length jung) (length jong)))
+    (let* ((size (+ (length cho) (length jung) (length jong)))
            (remaining (if done (nthcdr size current) nil)))
       (list cho jung jong done remaining))))
 
 ;;; ============================================================
-;;; 오토마타 상태
+;;; Preedit 및 상태 제어
 ;;; ============================================================
 
 (defvar-local my/hangul--current nil)
 (defvar-local my/hangul--preedit 0)
 (defvar-local my/hangul--overlay nil)
 
-;;; ============================================================
-;;; Preedit
-;;; ============================================================
-
-(defun my/hangul--char-count (str)
-  "STR 의 문자 수 (바이트 수 아님)."
-  (length (string-to-list str)))
+(defun my/hangul--char-count (str) (length (string-to-list str)))
 
 (defun my/hangul--show (str)
-  (when (> my/hangul--preedit 0)
-    (delete-char (- my/hangul--preedit)))
+  (when (> my/hangul--preedit 0) (delete-char (- my/hangul--preedit)))
   (let ((nchars (my/hangul--char-count str)))
     (if (> nchars 0)
         (progn
@@ -223,91 +187,47 @@ CURRENT: 키 문자열 리스트.
             (setq my/hangul--overlay (make-overlay (point) (point)))
             (overlay-put my/hangul--overlay 'face '(:underline (:color "yellow" :style line))))
           (move-overlay my/hangul--overlay (- (point) nchars) (point))
-          ;; hangul-to-hanja-conversion 이 quail-overlay 위치로 preedit 감지
-          (when (overlayp quail-overlay)
-            (move-overlay quail-overlay (- (point) nchars) (point))))
+          (when (overlayp quail-overlay) (move-overlay quail-overlay (- (point) nchars) (point))))
       (setq my/hangul--preedit 0)
       (when (and my/hangul--overlay (overlay-buffer my/hangul--overlay))
         (delete-overlay my/hangul--overlay) (setq my/hangul--overlay nil))
-      (when (overlayp quail-overlay)
-        (move-overlay quail-overlay (point) (point)))))
+      (when (overlayp quail-overlay) (move-overlay quail-overlay (point) (point)))))
   (redisplay))
 
 (defun my/hangul--clear ()
-  (when (> my/hangul--preedit 0)
-    (delete-char (- my/hangul--preedit))
-    (setq my/hangul--preedit 0))
-  (when (and my/hangul--overlay (overlay-buffer my/hangul--overlay))
-    (delete-overlay my/hangul--overlay)
-    (setq my/hangul--overlay nil))
-  (when (overlayp quail-overlay)
-    (move-overlay quail-overlay (point) (point))))
-
-;;; ============================================================
-;;; 한자/기호 변환
-;;; ============================================================
-
-(defun my/hangul-event-p (event)
-  "한글 유니코드 이벤트 여부 확인 (음절/자모/호환자모)."
-  (and (integerp event)
-       (or (and (>= event #xAC00) (<= event #xD7A3))   ; 한글 음절
-           (and (>= event #x1100) (<= event #x11FF))   ; 한글 자모
-           (and (>= event #x3130) (<= event #x318F))))) ; 호환 자모
+  (when (> my/hangul--preedit 0) (delete-char (- my/hangul--preedit)) (setq my/hangul--preedit 0))
+  (when (and my/hangul--overlay (overlay-buffer my/hangul--overlay)) (delete-overlay my/hangul--overlay) (setq my/hangul--overlay nil))
+  (when (overlayp quail-overlay) (move-overlay quail-overlay (point) (point))))
 
 (defun my/hangul-to-hanja-conversion ()
-  "직전 한글 문자를 한자/기호로 변환."
-  (interactive)
   (let ((hanja (hangul-to-hanja-char (preceding-char))))
-    (when hanja
-      (delete-char -1)
-      (insert (string hanja)))))
+    (when hanja (delete-char -1) (insert (string hanja)))))
 
 (defun my/hangul-to-hanja-at-point ()
-  "커서 직전 한글 글자를 한자로 변환 (M-F9)."
   (interactive)
-  (let* ((end (point))
-         (start (1- end))
-         (char-str (if (>= start (point-min))
-                       (buffer-substring-no-properties start end)
-                     "")))
-    (if (not (string-match-p "^[가-힣]$" char-str))
-        (message "커서 직전 문자가 한글이 아닙니다.")
-      (let* ((char (string-to-char char-str))
-             (hanja (hangul-to-hanja-char char)))
-        (if (not hanja)
-            (message "'%s'에 해당하는 한자가 없습니다." char-str)
-          (delete-char -1)
-          (insert (string hanja)))))))
-
-;;; ============================================================
-;;; Process / Flush / Backspace
-;;; ============================================================
+  (let* ((end (point)) (start (1- end))
+         (char-str (if (>= start (point-min)) (buffer-substring-no-properties start end) "")))
+    (when (string-match-p "^[가-힣]$" char-str)
+      (let ((hanja (hangul-to-hanja-char (string-to-char char-str))))
+        (when hanja (delete-char -1) (insert (string hanja)))))))
 
 (defun my/hangul--process (ch)
   (setq my/hangul--current (append my/hangul--current (list ch)))
-  (let* ((result    (my/hangul--run my/hangul--current))
-         (cho       (nth 0 result))
-         (jung      (nth 1 result))
-         (jong      (nth 2 result))
-         (done      (nth 3 result))
-         (remaining (nth 4 result)))
+  (let* ((result (my/hangul--run my/hangul--current))
+         (cho (nth 0 result)) (jung (nth 1 result)) (jong (nth 2 result))
+         (done (nth 3 result)) (remaining (nth 4 result)))
     (while done
       (my/hangul--clear)
-      (let ((str (my/hangul--norm cho jung jong)))
-        (when (> (length str) 0) (insert str)))
+      (let ((str (my/hangul--norm cho jung jong))) (when (> (length str) 0) (insert str)))
       (setq my/hangul--current remaining)
       (let* ((r2 (my/hangul--run my/hangul--current)))
-        (setq cho       (nth 0 r2)
-              jung      (nth 1 r2)
-              jong      (nth 2 r2)
-              done      (nth 3 r2)
-              remaining (nth 4 r2))))
+        (setq cho (nth 0 r2) jung (nth 1 r2) jong (nth 2 r2) done (nth 3 r2) remaining (nth 4 r2))))
     (my/hangul--show (my/hangul--norm cho jung jong))))
 
 (defun my/hangul--flush ()
   (when my/hangul--current
     (let* ((result (my/hangul--run my/hangul--current))
-           (str    (my/hangul--norm (nth 0 result) (nth 1 result) (nth 2 result))))
+           (str (my/hangul--norm (nth 0 result) (nth 1 result) (nth 2 result))))
       (my/hangul--clear)
       (when (> (length str) 0) (insert str))
       (setq my/hangul--current nil))))
@@ -317,11 +237,11 @@ CURRENT: 키 문자열 리스트.
       (delete-char -1)
     (setq my/hangul--current (butlast my/hangul--current))
     (let* ((result (my/hangul--run my/hangul--current))
-           (str    (my/hangul--norm (nth 0 result) (nth 1 result) (nth 2 result))))
+           (str (my/hangul--norm (nth 0 result) (nth 1 result) (nth 2 result))))
       (my/hangul--show str))))
 
 ;;; ============================================================
-;;; 입력 메서드
+;;; 입력 메서드 루프
 ;;; ============================================================
 
 (defun my/hangul--alpha-p (key)
@@ -330,6 +250,10 @@ CURRENT: 키 문자열 리스트.
 (defun my/hangul-input-method (key)
   (if (or buffer-read-only
           overriding-terminal-local-map
+          overriding-local-map
+          (> (length (this-command-keys)) 1)
+          (and (boundp 'defining-kbd-macro) defining-kbd-macro)
+          (and (boundp 'executing-kbd-macro) executing-kbd-macro)
           (not (my/hangul--alpha-p key)))
       (list key)
     (let ((input-method-function nil) (echo-keystrokes 0) (help-char nil))
@@ -339,64 +263,27 @@ CURRENT: 키 문자열 리스트.
             (while t
               (let* ((event (read-event nil)))
                 (cond
-                 ;; C-g → 입력 취소 후 탈출
                  ((eq event ?\C-g)
-                  (my/hangul--flush)
-                  (my/hangul--clear)
+                  (my/hangul--clear) (setq my/hangul--current nil)
                   (signal 'quit nil))
-                 ;; 백스페이스
                  ((eq event 127) (my/hangul--backspace))
-                 ;; f9 / Hangul_Hanja → 한자 변환
                  ((or (eq event 'f9) (eq event 'Hangul_Hanja))
-                  (my/hangul--flush)
-                  (my/hangul-to-hanja-conversion))
-                 ;; 알파벳 → 계속 조합
+                  (my/hangul--flush) (my/hangul-to-hanja-conversion))
                  ((and (integerp event) (my/hangul--alpha-p event))
-                  (my/hangul--process (string event)))
-                 ;; 그 외 (Space, Enter, 보조키 등) → 확정 후 Emacs에 전달
+                  (if (or overriding-terminal-local-map overriding-local-map)
+                      (progn (my/hangul--flush)
+                             (setq unread-command-events (cons event unread-command-events))
+                             (throw 'my/hangul-exit nil))
+                    (my/hangul--process (string event))))
                  (t
                   (my/hangul--flush)
-                  (setq unread-command-events
-                        (cons event unread-command-events))
+                  (setq unread-command-events (cons event unread-command-events))
                   (throw 'my/hangul-exit nil))))))
         (my/hangul--flush)
         (my/hangul--clear)))))
 
 ;;; ============================================================
-;;; Prefix 키 override (C-x, C-c 등 입력 시 한글 입력기 비활성화)
-;;; ============================================================
-
-(defun my/hangul--prefix-override-handler (arg)
-  "Prefix 키(C-x, M-x 등) 입력 시 한글 비활성화 후 키를 Emacs에 전달."
-  (interactive "P")
-  (my/hangul--flush)
-  (my/hangul--clear)
-  (deactivate-input-method)
-  (setq prefix-arg arg)
-  (prefix-command-preserve-state)
-  (setq unread-command-events
-        (append (mapcar (lambda (e) (cons t e))
-                        (listify-key-sequence (this-command-keys)))
-                unread-command-events)))
-
-(defvar my/hangul--prefix-override-map-enable nil
-  "prefix override keymap 활성 여부.")
-
-(defvar my/hangul--prefix-override-map-alist
-  `((my/hangul--prefix-override-map-enable
-     .
-     ,(let ((map (make-sparse-keymap)))
-        (dolist (prefix '("C-x" "C-c" "C-h" "M-x"))
-          (define-key map (kbd prefix)
-                      #'my/hangul--prefix-override-handler))
-        map)))
-  "prefix override keymap alist.")
-
-(add-to-ordered-list 'emulation-mode-map-alists
-                     'my/hangul--prefix-override-map-alist -1000)
-
-;;; ============================================================
-;;; 입력기 등록
+;;; 입력기 등록 및 활성화
 ;;; ============================================================
 
 (defun my/hangul-activate (&rest _)
@@ -405,14 +292,12 @@ CURRENT: 키 문자열 리스트.
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))
   (setq-local input-method-function #'my/hangul-input-method)
-  (global-set-key (kbd "<M-f9>") #'my/hangul-to-hanja-at-point)
-  (setq my/hangul--prefix-override-map-enable t))
+  (global-set-key (kbd "<M-f9>") #'my/hangul-to-hanja-at-point))
 
 (defun my/hangul-deactivate ()
   (my/hangul--flush) (my/hangul--clear)
   (quail-delete-overlays)
-  (kill-local-variable 'input-method-function)
-  (setq my/hangul--prefix-override-map-enable nil))
+  (kill-local-variable 'input-method-function))
 
 (register-input-method
  "korean-my-hangul" "Korean" #'my/hangul-activate "한2"
