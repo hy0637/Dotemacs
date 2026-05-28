@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t -*-
-;;  my-hangul.el — 두벌식 한글 입력기 (특수 메뉴 충돌 완벽 해결 버전)
+;;  my-hangul.el — 두벌식 한글 입력기
 ;;  NavilIME Hangul.swift + Keyboard002.swift 직접 포팅
 ;;
 ;;  키 배치:
@@ -18,26 +18,6 @@
 ;;       모드라인 변경 없음, prefix override 코드 제거로 단순화
 ;; v1.2: F9 기능 통합 - 조합 중 F9→한자/기호 변환(기존),
 ;;       완성된 글자에서 F9→커서 직전 글자 한자 변환(신규). M-F9 제거
-;;
-;;  키 배치:
-;;   q=ㅂ  w=ㅈ  e=ㄷ  r=ㄱ  t=ㅅ  y=ㅛ  u=ㅕ  i=ㅑ  o=ㅐ  p=ㅔ
-;;   a=ㅁ  s=ㄴ  d=ㅇ  f=ㄹ  g=ㅎ  h=ㅗ  j=ㅓ  k=ㅏ  l=ㅣ
-;;   z=ㅋ  x=ㅌ  c=ㅊ  v=ㅍ  b=ㅠ  n=ㅜ  m=ㅡ
-;;   Q=ㅃ  W=ㅉ  E=ㄸ  R=ㄲ  T=ㅆ(초성/종성)  O=ㅒ  P=ㅖ
-;;   연속: qq=ㅃ ww=ㅉ ee=ㄸ rr=ㄲ tt=ㅆ(초성) oo=ㅒ pp=ㅖ tt=ㅆ(종성)
-;; 
-;; version 1.1
-;;
-;;;; my-hangul.el v1.1 완성 기능
-;; 두벌식 한글 입력, 겹받침, 쌍자음 ✅
-;; oo→ㅒ, pp→ㅖ 연속 모음 ✅
-;; F9 한자/기호 변환 (조합 중, 뜻풀이 포함) ✅
-;; M-F9 커서 직전 글자 한자 변환 ✅
-;; 노란 언더라인 preedit ✅
-;; C-g 탈출 ✅
-;; C-x p p 등 특수 메뉴 충돌 해결 ✅
-;; 미니버퍼 한글 입력 가능 ✅
-;; 모드라인 변경 없음 ✅
 
 (require 'quail)
 (require 'hanja-util)
@@ -304,8 +284,29 @@
 ;;; 입력기 등록 및 활성화
 ;;; ============================================================
 
+(defun my/hangul-input-method-help ()
+  "my-hangul 입력기 도움말 표시."
+  (interactive)
+  (with-output-to-temp-buffer "*Help*"
+    (princ "my-hangul — 두벌식 한글 입력기 (NavilIME 포팅)
+
+키 배치:
+  q=ㅂ  w=ㅈ  e=ㄷ  r=ㄱ  t=ㅅ  y=ㅛ  u=ㅕ  i=ㅑ  o=ㅐ  p=ㅔ
+  a=ㅁ  s=ㄴ  d=ㅇ  f=ㄹ  g=ㅎ  h=ㅗ  j=ㅓ  k=ㅏ  l=ㅣ
+  z=ㅋ  x=ㅌ  c=ㅊ  v=ㅍ  b=ㅠ  n=ㅜ  m=ㅡ
+
+쌍자음/연속 입력:
+  qq=ㅃ  ww=ㅉ  ee=ㄸ  rr=ㄲ  tt=ㅆ  oo=ㅒ  pp=ㅖ
+
+특수 키:
+  F9       조합 중 → 한자/기호 변환
+           완성 후 → 커서 직전 글자 한자 변환
+  S-SPC    한글/영문 전환
+  C-g      입력 취소")))
+
 (defun my/hangul-activate (&rest _)
-  (setq deactivate-current-input-method-function #'my/hangul-deactivate)
+  (setq deactivate-current-input-method-function #'my/hangul-deactivate
+        describe-current-input-method-function   #'my/hangul-input-method-help)
   (quail-setup-overlays nil)
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))

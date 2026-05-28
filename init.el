@@ -289,7 +289,10 @@
   :hook
   (after-init . (lambda ()
                   (setq default-input-method "korean-my-hangul")))
-  :bind("S-SPC". toggle-input-method))
+  :bind
+  (("S-SPC" . toggle-input-method)
+   :map isearch-mode-map
+   ("S-SPC" . toggle-input-method)))
 
 
 ;; =======================================
