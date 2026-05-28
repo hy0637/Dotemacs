@@ -17,7 +17,8 @@
 ;; v1.1: (> (length (this-command-keys)) 1) 조건으로 C-x p p 등 멀티키 시퀀스 충돌 해결
 ;;       모드라인 변경 없음, prefix override 코드 제거로 단순화
 ;; v1.2: F9 기능 통합 - 조합 중 F9→한자/기호 변환(기존),
-;;       완성된 글자에서 F9→커서 직전 글자 한자 변환(신규). M-F9 제거
+;;       완성된 글자에서 F9→커서 위치 글자 한자 변환(바닐라 방식 채택). M-F9 제거
+;;       C-h I 입력기 도움말 추가
 
 (require 'quail)
 (require 'hanja-util)
@@ -201,13 +202,15 @@
     (when hanja (delete-char -1) (insert (string hanja)))))
 
 (defun my/hangul-to-hanja-at-point ()
-  "커서 직전 한글 글자를 한자로 변환 (F9)."
+  "커서 위치 한글 글자를 한자로 변환 (F9)."
   (interactive)
-  (let* ((end (point)) (start (1- end))
-         (char-str (if (>= start (point-min)) (buffer-substring-no-properties start end) "")))
+  (let* ((char (following-char))
+         (char-str (string char)))
     (when (string-match-p "^[가-힣]$" char-str)
-      (let ((hanja (hangul-to-hanja-char (string-to-char char-str))))
-        (when hanja (delete-char -1) (insert (string hanja)))))))
+      (let ((hanja (hangul-to-hanja-char char)))
+        (when hanja
+          (delete-char 1)
+          (insert (string hanja)))))))
 
 (defun my/hangul--process (ch)
   (setq my/hangul--current (append my/hangul--current (list ch)))
