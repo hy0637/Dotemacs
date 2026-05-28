@@ -9,6 +9,23 @@
 ;;   Q=ㅃ  W=ㅉ  E=ㄸ  R=ㄲ  T=ㅆ(초성/종성)  O=ㅒ  P=ㅖ
 ;;   연속: qq=ㅃ ww=ㅉ ee=ㄸ rr=ㄲ tt=ㅆ(초성) oo=ㅒ pp=ㅖ tt=ㅆ(종성)
 ;;
+;; version 1.2
+;;
+;;;; 변경 이력
+;; v1.0: 두벌식 한글 입력, 겹받침/쌍자음, oo→ㅒ/pp→ㅖ, F9 한자/기호 변환,
+;;       노란 preedit, C-g 탈출, C-x/C-c/C-h/M-x 자동 영문 전환, 미니버퍼 한글 입력
+;; v1.1: (> (length (this-command-keys)) 1) 조건으로 C-x p p 등 멀티키 시퀀스 충돌 해결
+;;       모드라인 변경 없음, prefix override 코드 제거로 단순화
+;; v1.2: F9 기능 통합 - 조합 중 F9→한자/기호 변환(기존),
+;;       완성된 글자에서 F9→커서 직전 글자 한자 변환(신규). M-F9 제거
+;;
+;;  키 배치:
+;;   q=ㅂ  w=ㅈ  e=ㄷ  r=ㄱ  t=ㅅ  y=ㅛ  u=ㅕ  i=ㅑ  o=ㅐ  p=ㅔ
+;;   a=ㅁ  s=ㄴ  d=ㅇ  f=ㄹ  g=ㅎ  h=ㅗ  j=ㅓ  k=ㅏ  l=ㅣ
+;;   z=ㅋ  x=ㅌ  c=ㅊ  v=ㅍ  b=ㅠ  n=ㅜ  m=ㅡ
+;;   Q=ㅃ  W=ㅉ  E=ㄸ  R=ㄲ  T=ㅆ(초성/종성)  O=ㅒ  P=ㅖ
+;;   연속: qq=ㅃ ww=ㅉ ee=ㄸ rr=ㄲ tt=ㅆ(초성) oo=ㅒ pp=ㅖ tt=ㅆ(종성)
+;; 
 ;; version 1.1
 ;;
 ;;;; my-hangul.el v1.1 완성 기능
@@ -204,6 +221,7 @@
     (when hanja (delete-char -1) (insert (string hanja)))))
 
 (defun my/hangul-to-hanja-at-point ()
+  "커서 직전 한글 글자를 한자로 변환 (F9)."
   (interactive)
   (let* ((end (point)) (start (1- end))
          (char-str (if (>= start (point-min)) (buffer-substring-no-properties start end) "")))
@@ -292,7 +310,7 @@
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))
   (setq-local input-method-function #'my/hangul-input-method)
-  (global-set-key (kbd "<M-f9>") #'my/hangul-to-hanja-at-point))
+  (global-set-key (kbd "<f9>") #'my/hangul-to-hanja-at-point))
 
 (defun my/hangul-deactivate ()
   (my/hangul--flush) (my/hangul--clear)
