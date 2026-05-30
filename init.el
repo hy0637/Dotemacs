@@ -230,14 +230,16 @@
 (use-package autorevert
   :ensure nil
   :custom
-  (auto-revert-interval 60)         ; 60초 간격
+  (auto-revert-interval 60)
   (auto-revert-check-vc-info t)
   (global-auto-revert-non-file-buffers t)
-  :hook (focus-in . (lambda ()
-                      (when (fboundp 'auto-revert-buffers)
-                        (auto-revert-buffers))))
   :config
-  (global-auto-revert-mode t))
+  (global-auto-revert-mode t)
+  (add-function :after after-focus-change-function
+                (lambda ()
+                  (when (and (frame-focus-state)
+                             (fboundp 'auto-revert-buffers))
+                    (auto-revert-buffers)))))
 
 
 ;; =======================================
@@ -277,20 +279,30 @@
   :init
   (setenv "LANG" "ko_KR.UTF-8")
   (setenv "LC_COLLATE" "C")
-  (set-locale-environment "en_US.UTF-8")
+  (advice-add 'set-language-environment-input-method :override #'ignore)
+  (set-locale-environment "ko_KR.UTF-8")
+  (advice-remove 'set-language-environment-input-method #'ignore)
   (setq system-time-locale "ko_KR.UTF-8")
+  (setq default-input-method "korean-my-hangul")
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
+
   :custom
   (input-method-verbose-flag nil)
   (input-method-highlight-flag nil)
-  :hook
-  (after-init . (lambda ()
-                  (setq default-input-method "korean-my-hangul")))
+
+  :config
+  (register-input-method
+   "korean-my-hangul"
+   "Korean"
+   #'my/hangul-activate
+   "한2"
+   "두벌식 한글 입력기")
+
   :bind
-  (("S-SPC" . toggle-input-method)
+  (("S-SPC" . toggle-input-method) ;korea-util.el. korean-hangul
    :map isearch-mode-map
    ("S-SPC" . toggle-input-method)))
 
