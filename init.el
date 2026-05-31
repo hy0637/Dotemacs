@@ -300,11 +300,16 @@
    #'my/hangul-activate
    "한2"
    "두벌식 한글 입력기")
+  (with-eval-after-load 'korea-util        ;korea-util.el의 하드코딩 회피
+    (advice-add 'toggle-korean-input-method :override
+      (lambda ()
+        (interactive)
+        (if current-input-method
+            (deactivate-input-method)
+          (activate-input-method
+           (or default-input-method
+               (concat "korean-hangul" default-korean-keyboard))))))))
 
-  :bind
-  (("S-SPC" . toggle-input-method) ;korea-util.el. korean-hangul
-   :map isearch-mode-map
-   ("S-SPC" . toggle-input-method)))
 
 
 ;; =======================================
