@@ -282,7 +282,6 @@
   (advice-add 'set-language-environment-input-method :override #'ignore)
   (set-locale-environment "ko_KR.UTF-8")
   (advice-remove 'set-language-environment-input-method #'ignore)
-  (setq system-time-locale "ko_KR.UTF-8")
   (setq default-input-method "korean-my-hangul")
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
@@ -294,13 +293,7 @@
   (input-method-highlight-flag nil)
 
   :config
-  (register-input-method
-   "korean-my-hangul"
-   "Korean"
-   #'my/hangul-activate
-   "한2"
-   "두벌식 한글 입력기")
-  (with-eval-after-load 'korea-util        ;korea-util.el의 하드코딩 회피
+  (with-eval-after-load 'korea-util    ;;korea-util.el의 하드코딩 회피
     (advice-add 'toggle-korean-input-method :override
       (lambda ()
         (interactive)
@@ -309,7 +302,6 @@
           (activate-input-method
            (or default-input-method
                (concat "korean-hangul" default-korean-keyboard))))))))
-
 
 
 ;; =======================================
