@@ -8,7 +8,7 @@
       read-process-output-max (* 4 1024 1024))  ; 4MB
 
 ;; 파일 핸들러 임시 비활성화
-(defvar my--file-name-handler-alist file-name-handler-alist)
+(defvar hy--file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
 
 ;; 시작 후 GC 설정 복원
@@ -16,7 +16,7 @@
           (lambda ()
             (setq gc-cons-threshold (* 16 1024 1024)  ; 16MB
                   gc-cons-percentage 0.1
-                  file-name-handler-alist my--file-name-handler-alist)
+                  file-name-handler-alist hy--file-name-handler-alist)
             (garbage-collect)))  ; 명시적 GC 실행
 
 ;; ======================================

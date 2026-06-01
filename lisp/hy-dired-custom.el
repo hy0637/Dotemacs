@@ -1,20 +1,20 @@
-;;; my-dired-custom.el --- Custom Dired configuration -*- lexical-binding: t; -*-
+;;; hy-dired-custom.el --- Custom Dired configuration -*- lexical-binding: t; -*-
 
 ;; ======================================
 ;;; Helper Function
 ;; ======================================
-(defcustom my/dired-external-regexp "\\.pdf\\|\\.docx\\|\\.xlsx\\|\\.hwp\\|\\.hwpx"
+(defcustom hy/dired-external-regexp "\\.pdf\\|\\.docx\\|\\.xlsx\\|\\.hwp\\|\\.hwpx"
   "List of file extensions to be opened with an external program."
   :type 'string
   :group 'dired)
 
 
-(defun my/dired-open-dwim ()
+(defun hy/dired-open-dwim ()
   "Open file in Emacs or via macOS 'open' command based on its extension."
   (interactive)
   (let* ((file (dired-get-file-for-visit))
          (ext (file-name-extension file t)))
-    (if (and ext (string-match-p my/dired-external-regexp ext))
+    (if (and ext (string-match-p hy/dired-external-regexp ext))
 	;; Open with external app (macOS 'open' command)
         (progn
           (start-process "dired-external-open" nil "open" file)
@@ -25,7 +25,7 @@
         (find-file file)))))
 
 
-(defun my/dired-move-to-pdf-folder-safe ()
+(defun hy/dired-move-to-pdf-folder-safe ()
   "Move marked files to '/pdf' safely."
   (interactive)
   (let* ((target-dir "../pdf/")
@@ -57,11 +57,11 @@
   (dired-free-space nil)
   :bind
   (:map dired-mode-map
-   ("RET" . my/dired-open-dwim)
+   ("RET" . hy/dired-open-dwim)
    ("C-<return>" . dired-do-open)
-   ("M" . my/dired-move-to-pdf-folder-safe)
+   ("M" . hy/dired-move-to-pdf-folder-safe)
    ("/" . consult-line)))
 
 
-(provide 'my-dired-custom)
-;;; end my-dired-custom
+(provide 'hy-dired-custom)
+;;; end hy-dired-custom

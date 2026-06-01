@@ -1,4 +1,4 @@
-;;; my-completion.el --- configuration -*- lexical-binding: t; -*-
+;;; hy-completion.el --- configuration -*- lexical-binding: t; -*-
 
 ;;; CODE;
 
@@ -84,7 +84,7 @@
 ;;; pair-pair-wrap
 ;; =======================================
 ;;inspire https://protesilaos.com
-(defcustom my/pair-pairs
+(defcustom hy/pair-pairs
   '((?* :description "Bold"           :pair ?*)
     (?/ :description "Italic"         :pair ?/)
     (?= :description "Verbatim"       :pair ?=)
@@ -104,11 +104,11 @@
   :group 'editing
   :type '(alist :key-type character :value-type (plist)))
 
-(defun my/pair-pairs-wrap (char &optional _target)
+(defun hy/pair-pairs-wrap (char &optional _target)
   "Enclose the active region or the word at point with a pair of CHARs.
 Detects existing open/close delimiters in the region and replaces or inserts accordingly."
   (interactive "c기호 입력 (*, /, =, (, <...): ")
-  (let* ((entry (assoc char my/pair-pairs))
+  (let* ((entry (assoc char hy/pair-pairs))
          (pair-data (plist-get (cdr entry) :pair))
          (open      (if (consp pair-data) (car pair-data) pair-data))
          (close     (if (consp pair-data) (cdr pair-data) pair-data))
@@ -145,7 +145,7 @@ Detects existing open/close delimiters in the region and replaces or inserts acc
                                              (cons key-str  cs)
                                              (cons os       key-str)
                                              (cons key-str  key-str))))))
-                               my/pair-pairs)))
+                               hy/pair-pairs)))
                (existing-open
                 (cl-some (lambda (p)
                            (let ((os (car p)))
@@ -185,13 +185,13 @@ Detects existing open/close delimiters in the region and replaces or inserts acc
   (dolist (map (list embark-symbol-map
                      embark-region-map
                      embark-general-map))
-    (define-key map (kbd "w") #'my/pair-pairs-wrap)))
+    (define-key map (kbd "w") #'hy/pair-pairs-wrap)))
 
 
 ;; =======================================
 ;;; Hunspell 설정
 ;; =======================================
-;; (defun my-korean-spell-check ()
+;; (defun hy-korean-spell-check ()
 ;;   "Set hunspell as the default spell checker for Korean"
 ;;   (interactive)
 ;;   (require 'ispell) ;; 함수 실행 시 패키지 로드
@@ -200,7 +200,7 @@ Detects existing open/close delimiters in the region and replaces or inserts acc
 ;;   (message "Korean spell check enable"))
 
 ;; (use-package ispell
-;;   :if my-macOS-p
+;;   :if hy-macOS-p
 ;;   :defer t
 ;;   :config
 ;;   (setq ispell-program-name "hunspell")
@@ -298,7 +298,7 @@ Detects existing open/close delimiters in the region and replaces or inserts acc
 #+end_src")
 
     ;; 코딩식 자동 즉시 변환
-    (defun my/org-auto-symbol-replace ()
+    (defun hy/org-auto-symbol-replace ()
       (when (and (not (org-in-src-block-p))
                  (not (org-at-table-p))
                  (not (org-in-verbatim-emphasis)))
@@ -323,8 +323,8 @@ Detects existing open/close delimiters in the region and replaces or inserts acc
     (add-hook 'org-mode-hook
               (lambda ()
                 (add-hook 'post-self-insert-hook
-                          #'my/org-auto-symbol-replace
+                          #'hy/org-auto-symbol-replace
                           nil t)))))
 
 ;; end here
-(provide 'my-completion)
+(provide 'hy-completion)

@@ -1,9 +1,9 @@
 ;;; -*- lexical-binding: t; -*-
-;; .emacs.d/lisp/my-useful-custom.el
+;; .emacs.d/lisp/hy-useful-custom.el
 
 
 ;;; ###autoload
-;; (defun my-today-stamp ()
+;; (defun hy-today-stamp ()
 ;;   "Prompt for a date format and insert it at point."
 ;;   (interactive)
 ;;   (let* ((formats `(("ISO (YYYY-MM-DD)"       . "%Y-%m-%d")
@@ -20,7 +20,7 @@
 
 
 ;;; ###autoload
-(defun my/select-current-line ()
+(defun hy/select-current-line ()
  "Select the entire current line as an active region."
   (interactive)
   (beginning-of-line)
@@ -29,16 +29,16 @@
 
 
 ;;; ###autoload
-(defun my/open-line-below ()
+(defun hy/open-line-below ()
   "Open a new line below the current line and move point there."
   (interactive)
   (end-of-line)
   (newline-and-indent))
 
-(global-set-key (kbd "C-c o") 'my/open-line-below)
+(global-set-key (kbd "C-c o") 'hy/open-line-below)
 
 ;;; ###autoload
-;; (defun my/duplicate-dwim ()
+;; (defun hy/duplicate-dwim ()
 ;;   "Duplicate the current region if active, otherwise duplicate the current line."
 ;;   (interactive)
 ;;   (let ((use-region (use-region-p)))
@@ -54,7 +54,7 @@
 
 
 ;;; ###autoload
-(defun my/query-replace-regexp-dwim (arg)
+(defun hy/query-replace-regexp-dwim (arg)
   "Replace in region if active, else in whole buffer."
   (interactive "P")
   (let ((start (if (use-region-p) (region-beginning) (point-min)))
@@ -64,7 +64,7 @@
       (call-interactively #'query-replace-regexp))))
 
 
-;; (defun my/deactivate-input-method (&rest _args)
+;; (defun hy/deactivate-input-method (&rest _args)
 ;;   "Deactivate current input method."
 ;;   (when (and (boundp 'current-input-method) current-input-method)
 ;;     (deactivate-input-method)))
@@ -79,7 +79,7 @@
 
 ;;https://github.com/protesilaos/dotfiles
 ;;;###autoload
-(defun my/simple-indent-dwim ()
+(defun hy/simple-indent-dwim ()
   "Indent the current defun in `prog-mode' or paragraph in `text-mode'."
   (interactive)
   (save-excursion
@@ -92,13 +92,13 @@
     (deactivate-mark)))
 
 
-(defun my/emacs-copyright ()
+(defun hy/emacs-copyright ()
   "Return Emacs copyright with current year."
   (format "Copyright © 1996-%s,  Free Software Foundation, Inc."
           (format-time-string "%Y")))
 
 
-(defun my/keyboard-quit-dwim ()
+(defun hy/keyboard-quit-dwim ()
   "Do-what-I-mean quit behavior.
 Handle 'keyboard-quit' based on the current context, such as an active region, open minibuffer,
 or the Completions buffer."
@@ -114,7 +114,7 @@ or the Completions buffer."
     (keyboard-quit))))
 
 
-(defun my/smart-beginning-of-line ()
+(defun hy/smart-beginning-of-line ()
   "Move point to first non-whitespace character or `beginning-of-line'."
   (interactive)
   (let ((oldpos (point)))
@@ -125,7 +125,7 @@ or the Completions buffer."
 
 
 ;;; ###autoload
-(defun my/paste-with-parentheses ()
+(defun hy/paste-with-parentheses ()
   "Insert clipboard content enclosed in parentheses."
   (interactive)
   (let ((text (or (gui-get-selection 'CLIPBOARD 'STRING) (current-kill 0))))
@@ -135,7 +135,7 @@ or the Completions buffer."
 
 
 ;;;###autoload
-(defun my/toggle-window-split-ratio ()
+(defun hy/toggle-window-split-ratio ()
   "Toggle the current window's width between 1/3 and 2/3 of the frame.
 Does not include 1/2 ratio; use `balance-windows' (C-x +) for equal splits.
 Preserves all buffer contents during the resize."
@@ -152,7 +152,7 @@ Preserves all buffer contents during the resize."
 
 
 ;;;###autoload
-(defun my/toggle-window-height-ratio ()
+(defun hy/toggle-window-height-ratio ()
   "Toggle the current window's height between 1/3 and 2/3 of the frame.
 This function preserves all buffer contents and works regardless of 
 the number of open windows. It only adjusts the window's boundary."
@@ -174,7 +174,7 @@ the number of open windows. It only adjusts the window's boundary."
 
 
 ;;;###autoload
-(defun my/toggle-window-dedicated ()
+(defun hy/toggle-window-dedicated ()
   "Toggle whether the current window is dedicated to its current buffer.
 A dedicated window will not be used by Emacs to display other buffers."
   (interactive)
@@ -184,7 +184,7 @@ A dedicated window will not be used by Emacs to display other buffers."
 
 
 ;;;###autoload
-(defun my/layout-3-windows-center-focus ()
+(defun hy/layout-3-windows-center-focus ()
   "Set a 25% | 50% | 25% layout for 3 windows, regardless of cursor position.
 Windows are sorted by their horizontal position on the frame."
   (interactive)
@@ -213,7 +213,7 @@ Windows are sorted by their horizontal position on the frame."
 
 
 ;;;###autoload
-(defun my/split-window-three-column ()
+(defun hy/split-window-three-column ()
   "Split the current window into three columns with 25:50:25 ratio.
 If more than one window exists, it will first delete other windows."
   (interactive)
@@ -222,11 +222,11 @@ If more than one window exists, it will first delete other windows."
   (split-window-right)
   (split-window-right)
   ;; 2. 이전에 만든 25:50:25 레이아웃 함수 호출
-  (my/layout-3-windows-center-focus)
+  (hy/layout-3-windows-center-focus)
   (message "Three-column layout initialized."))
 
 
-(defun my/get-display-workarea ()
+(defun hy/get-display-workarea ()
   "Returns the usable work area of the current monitor,
 excluding the Dock and Menu bar."
   (let* ((attrs (frame-monitor-attributes))
@@ -239,10 +239,10 @@ excluding the Dock and Menu bar."
 
 
 ;;;###autoload
-(defun my/tile-frame-left ()
+(defun hy/tile-frame-left ()
   "Snap the Emacs frame to the Left half of the screen."
   (interactive)
-  (let* ((area (my/get-display-workarea))
+  (let* ((area (hy/get-display-workarea))
          (x      (nth 0 area))
          (y      (nth 1 area))
          (width  (nth 2 area))
@@ -254,10 +254,10 @@ excluding the Dock and Menu bar."
 
 
 ;;;###autoload
-(defun my/tile-frame-right ()
+(defun hy/tile-frame-right ()
   "Snap the Emacs frame to the Right half of the screen."
   (interactive)
-  (let* ((area (my/get-display-workarea))
+  (let* ((area (hy/get-display-workarea))
          (x      (nth 0 area))
          (y      (nth 1 area))
          (width  (nth 2 area))
@@ -269,10 +269,10 @@ excluding the Dock and Menu bar."
 
 
 ;;;###autoload
-(defun my/tile-frame-center ()
+(defun hy/tile-frame-center ()
   "Snap the Emacs frame to the center 2/3 of the screen."
   (interactive)
-  (let* ((area   (my/get-display-workarea))
+  (let* ((area   (hy/get-display-workarea))
          (x      (nth 0 area))
          (y      (nth 1 area))
          (width  (nth 2 area))
@@ -284,7 +284,7 @@ excluding the Dock and Menu bar."
   (message "▣ center 2/3"))
 
 
-;; (defun my/Bdays ()
+;; (defun hy/Bdays ()
 ;;   "Return the elapsed days of BP medication since 2024-12-31 as a string.
 ;; This is a helper function for Org-capture templates."
 ;;   (let* ((target-date (encode-time 0 0 0 4 3 2026)) ; 기준일: 2026년 3월 4일
@@ -295,7 +295,7 @@ excluding the Dock and Menu bar."
 
 
 ;;;###autoload
-(defun my/caffeine-on ()
+(defun hy/caffeine-on ()
   "Prevent macOS from sleeping for a selected duration.
 Prompts the user to choose between 30 minutes or 60 minutes.
 Uses macOS built-in caffeinate command with -d flag to keep display awake."
@@ -307,7 +307,7 @@ Uses macOS built-in caffeinate command with -d flag to keep display awake."
 
 
 ;;;###autoload
-(defun my/caffeine-off ()
+(defun hy/caffeine-off ()
   "Allow macOS to sleep normally by terminating the caffeinate process.
 Kills any running caffeinate process started by caffeine-on."
   (interactive)
@@ -316,7 +316,7 @@ Kills any running caffeinate process started by caffeine-on."
 
 
 ;;;###autoload
-(defun my/buffer-to-pdf-pandoc ()
+(defun hy/buffer-to-pdf-pandoc ()
   "Convert the current buffer to PDF using Pandoc.
 Code files (.el, .py, .sh, etc.) are wrapped in a Markdown code block
 and converted via a temporary .md file, which is deleted after conversion.
@@ -361,5 +361,5 @@ Requires pandoc and xelatex to be installed."
       (message "PDF saved: %s" output))))
 
 
-(provide 'my-useful-custom)
-;;; my-useful-custom.el ends here
+(provide 'hy-useful-custom)
+;;; hy-useful-custom.el ends here

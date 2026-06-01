@@ -20,12 +20,12 @@
 ;; =======================================
 ;; Global variables
 ;; =======================================
-(defvar my/lisp-path (emacs/dir "lisp/")
+(defvar hy/lisp-path (emacs/dir "lisp/")
   "Path to the user's personal lisp directory.")
 
-(defvar my-macOS-p (eq system-type 'darwin))
+(defvar hy-macOS-p (eq system-type 'darwin))
 
-(defvar my-Macbook-p (string-prefix-p "MacBookAir" (system-name)))
+(defvar hy-Macbook-p (string-prefix-p "MacBookAir" (system-name)))
 
 (setq org-directory (dropbox/dir "org"))
 
@@ -70,7 +70,7 @@
 ;; =======================================
 ;; (use-package exec-path-from-shell
 ;;   :defer 2
-;;   :if my-macOS-p
+;;   :if hy-macOS-p
 ;;   :config
 ;;   (setq exec-path-from-shell-variables '("PATH" "MANPATH" "LIBRARY_PATH"))
 ;;   (exec-path-from-shell-initialize))
@@ -79,7 +79,7 @@
 ;; =======================================
 ;;; macOS PATH
 ;; =======================================
-(when my-macOS-p
+(when hy-macOS-p
   (let ((brew-bin "/opt/homebrew/bin")
         (tex-bin "/Library/TeX/texbin")
 	(emacs-bin "/Applications/Emacs.app/Contents/MacOS/bin"))
@@ -97,7 +97,7 @@
 ;; =======================================
 ;;; Native Compilation Settings 
 ;; =======================================
-(when (and my-macOS-p (fboundp 'native-comp-available-p) (native-comp-available-p))
+(when (and hy-macOS-p (fboundp 'native-comp-available-p) (native-comp-available-p))
   (let* (;; 순수 Elisp glob — 속도 부담 없음
          (gcc-bin (car (file-expand-wildcards "/opt/homebrew/bin/gcc-[0-9]*")))
          (gcc-lib-1 "/opt/homebrew/lib/gcc/current")
@@ -124,24 +124,24 @@
 ;; =======================================
 ;;; Load custom packages
 ;; =======================================
-(add-to-list 'load-path my/lisp-path)
+(add-to-list 'load-path hy/lisp-path)
 
-(require 'my-completion)
-(require 'my-dired-custom)
-(require 'my-org-custom)
-(require 'my-useful-custom)
-(require 'my-search)
-(require 'my-app)
-(require 'my-hangul)
-(require 'my-keys)
-(require 'my-todays-pop)
-(require 'my-radio-direct)
+(require 'hy-completion)
+(require 'hy-dired-custom)
+(require 'hy-org-custom)
+(require 'hy-useful-custom)
+(require 'hy-search)
+(require 'hy-app)
+(require 'hy-hangul)
+(require 'hy-keys)
+(require 'hy-todays-pop)
+(require 'hy-radio-direct)
 
 
 ;; =======================================
 ;;; MacOS keyboard
 ;; =======================================
-(when my-macOS-p
+(when hy-macOS-p
   ;; [왼쪽] Opt(Super) / Cmd(Meta)
   (setq ns-option-modifier 'super)
   (setq ns-command-modifier 'meta))
@@ -156,7 +156,7 @@
         temporary-file-directory (emacs/dir "tmp/"))
 
   :hook ((text-mode     . visual-line-mode))
-         ;; (focus-in-hook . my/deactivate-input-method))
+         ;; (focus-in-hook . hy/deactivate-input-method))
   
   :custom
   ;; Win
@@ -202,16 +202,16 @@
 
   :bind
   (("C-x f"       . toggle-frame-fullscreen)
-   ("C-x <left>"  . my/tile-frame-left)
-   ("C-x <right>" . my/tile-frame-right)
-   ("C-x <down>"  . my/tile-frame-center)
+   ("C-x <left>"  . hy/tile-frame-left)
+   ("C-x <right>" . hy/tile-frame-right)
+   ("C-x <down>"  . hy/tile-frame-center)
    ("C-x <up>"    . toggle-frame-maximized)
-   ("C-z"         . my/prefix-with-ime-deactivation)
+   ("C-z"         . hy/prefix-with-ime-deactivation)
    ("M-;"         . comment-line)
-   ("M-s u"       . my/search-unified)
-   ("C-a"         . my/smart-beginning-of-line)
-   ("C-g"         . my/keyboard-quit-dwim)
-   ("<escape>"    . my/keyboard-quit-dwim)))
+   ("M-s u"       . hy/search-unified)
+   ("C-a"         . hy/smart-beginning-of-line)
+   ("C-g"         . hy/keyboard-quit-dwim)
+   ("<escape>"    . hy/keyboard-quit-dwim)))
 
 
 (use-package time
@@ -259,7 +259,7 @@
 (use-package register
   :ensure nil
   :config
-  (let ((org-dir my/org-person-dir)
+  (let ((org-dir hy/org-person-dir)
 	(conf-dir user-emacs-directory))
     (set-register ?i `(file . ,(emacs/dir "init.el")))
     (set-register ?l `(file . ,(emacs/dir "lisp/")))
@@ -282,7 +282,7 @@
   (advice-add 'set-language-environment-input-method :override #'ignore)
   (set-locale-environment "ko_KR.UTF-8")
   (advice-remove 'set-language-environment-input-method #'ignore)
-  (setq default-input-method "korean-my-hangul")
+  (setq default-input-method "korean-hy-hangul")
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
@@ -307,7 +307,7 @@
 ;; =======================================
 ;;; Fonts
 ;; =======================================  
-(defun my-org-fixed-pitch-faces ()
+(defun hy-org-fixed-pitch-faces ()
   (dolist (face '(org-table org-code org-block
                   org-block-begin-line org-block-end-line
                   org-checkbox org-date org-link org-quote))
@@ -325,7 +325,7 @@
   (add-hook 'org-mode-hook
             (lambda ()
               (variable-pitch-mode 1)
-              (my-org-fixed-pitch-faces))))
+              (hy-org-fixed-pitch-faces))))
 
 
 ;; =======================================
@@ -434,12 +434,12 @@
 ;; =======================================
 ;;; Modeline
 ;; =======================================
-(defvar my/indicator-image-dir (emacs/dir "img-indicator/"))
+(defvar hy/indicator-image-dir (emacs/dir "img-indicator/"))
 (defvar ko-img 
-  (create-image (expand-file-name "han2.tiff" my/indicator-image-dir) 
+  (create-image (expand-file-name "han2.tiff" hy/indicator-image-dir) 
                 'tiff nil :ascent 'center))
 (defvar en-img 
-  (create-image (expand-file-name "qwerty.tiff" my/indicator-image-dir) 
+  (create-image (expand-file-name "qwerty.tiff" hy/indicator-image-dir) 
                 'tiff nil :ascent 'center))
 (defvar mode-line-use-images-p 
   (and (display-graphic-p) (image-type-available-p 'tiff)))
@@ -474,7 +474,7 @@
 ;;; Battery display
 ;; =======================================
 (use-package battery
-  :if my-Macbook-p
+  :if hy-Macbook-p
   :ensure nil
   :demand t
   :custom
@@ -495,17 +495,17 @@
   (desktop-buffers-not-to-save "\\(^\\*\\|\\.log$\\)")
   (desktop-save-mode nil) 
   :config
-  (defun my/desktop-save-at-point ()
+  (defun hy/desktop-save-at-point ()
     "Save all current buffers and window configurations."
     (interactive)
     (desktop-save user-emacs-directory)
     (message "✅ [Layout Saved] Current configuration has been recorded."))
 
-  (defun my/desktop-read-at-point ()
+  (defun hy/desktop-read-at-point ()
     "Restore the saved desktop session."
     (interactive)
     (desktop-read user-emacs-directory)
     (message "✅ [Layout Restored] Previous session has been restored."))
   :bind
-  (("C-x r S" . my/desktop-save-at-point)   ; Save Layout
-   ("C-x r R" . my/desktop-read-at-point))) ; Restore Layout
+  (("C-x r S" . hy/desktop-save-at-point)   ; Save Layout
+   ("C-x r R" . hy/desktop-read-at-point))) ; Restore Layout
