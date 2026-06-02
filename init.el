@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t -*-
-;;  emacs for macOS
-;;  ver260407
+;;  emacs conf for macOS
+;;  ver260602
 
 ;; CODE
 
@@ -9,11 +9,11 @@
 ;; Path helpers
 ;; =======================================
 (defun emacs/dir (subdir)
-  "user-emacs-directory 기준 경로를 반환한다."
+  "Return the absolute path of SUBDIR relative to `user-emacs-directory'."
   (expand-file-name subdir user-emacs-directory))
 
 (defun dropbox/dir (subdir)
-  "~/Dropbox/Docs 기준 경로를 반환한다."
+  "Return the absolute path of SUBDIR relative to \"~/Dropbox/Docs/\"."
   (expand-file-name subdir "~/Dropbox/Docs/"))
 
 
@@ -307,7 +307,7 @@
 ;; =======================================
 ;;; Fonts
 ;; =======================================  
-(defun hy-org-fixed-pitch-faces ()
+(defun hy/org-fixed-pitch-faces ()
   (dolist (face '(org-table org-code org-block
                   org-block-begin-line org-block-end-line
                   org-checkbox org-date org-link org-quote))
@@ -325,7 +325,7 @@
   (add-hook 'org-mode-hook
             (lambda ()
               (variable-pitch-mode 1)
-              (hy-org-fixed-pitch-faces))))
+              (hy/org-fixed-pitch-faces))))
 
 
 ;; =======================================

@@ -56,7 +56,6 @@
   (helpful-max-lines 50))
 
 
-
 ;; =======================================
 ;;; view-mode
 ;; =======================================
@@ -73,6 +72,7 @@
   :config
   (setq view-read-only t))
 
+
 (defun hy/view-mode-visual-setup ()
   "view-mode 진입/해제 시 커서 모양과 줄 하이라이트만 변경합니다."
   (if view-mode
@@ -84,6 +84,7 @@
       (hl-line-mode -1)
       ;; 편집 모드로 복귀 시: 원래 테마의 기본 커서(보통 box)로 복구
       (kill-local-variable 'cursor-type))))
+
 
 (defun hy/view-mode-edit-instantly ()
   "view-mode를 즉시 종료하고 편집 모드로 전환합니다."

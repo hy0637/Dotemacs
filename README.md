@@ -43,4 +43,12 @@ Org-mode is the core of my workflow, capturing the rhythm of the countryside:
 
 ---
 
+## 📄 License
+
+This configuration is open-source software licensed under the **GNU GPL v3**. 
+
+[![License: GPL v3](https://img.shields.shields.shields.shields.shields.shields.shields.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+---
+
 *Simple config for a productive and mindful life.*
