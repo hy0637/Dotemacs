@@ -19,7 +19,7 @@ My personal Emacs configuration — tailored for digital archiving and a quiet r
 I prioritize a seamless Korean typing experience. My setup bridges the gap between the system and Emacs:
 
 * **NavilIME**: My primary input method for macOS, optimized for system-wide stability.
-* **my-hangul (korean-my-hangul.el)**: A custom Emacs-native port of NavilIME’s logic. It brings the same fluid "Navilera" typing experience directly into Emacs Lisp for better integration and speed.
+* **hy-hangul (korean-hy-hangul.el)**: A custom Emacs-native port of NavilIME’s logic. It brings the same fluid "Navilera" typing experience directly into Emacs Lisp for better integration and speed.
 
 ---
 
@@ -38,7 +38,7 @@ Org-mode is the core of my workflow, capturing the rhythm of the countryside:
 
 * **`org-mode`**: Personal knowledge management (PKM) and historical text archiving.
 * **`magit`**: Essential for managing this configuration and my development repositories.
-* **`my-hangul`**: The engine behind my Korean writing within Emacs.
+* **`hy-hangul`**: The engine behind my Korean writing within Emacs.
 * **`consult`**, **`project.el`**, **`magit`**: My core stack for efficient navigation and workflow management.
 
 ---
