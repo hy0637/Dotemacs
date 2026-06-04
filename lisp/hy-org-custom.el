@@ -175,6 +175,37 @@
 
 
 
+;;; ###autoload
+(defun hy/org-insert-link-dwim ()
+;;https://github.com/hrs/dotfiles/blob/main/emacs/.config/emacs/configuration.org
+  "Like `org-insert-link' but with personal dwim preferences."
+  (interactive)
+  (let* ((point-in-link (org-in-regexp org-link-any-re 1))
+         (clipboard-url (when (and kill-ring
+                                   (string-match-p "^http" (current-kill 0)))
+                          (current-kill 0)))
+         (region-content (when (region-active-p)
+                           (buffer-substring-no-properties (region-beginning)
+                                                           (region-end)))))
+    (cond ((and region-content clipboard-url (not point-in-link))
+           (delete-region (region-beginning) (region-end))
+           (insert (org-make-link-string clipboard-url region-content))
+           (message clipboard-url))
+          ((and clipboard-url (not point-in-link))
+           (insert (org-make-link-string
+                    clipboard-url
+                    (read-string "title: "
+                                 (with-current-buffer (url-retrieve-synchronously clipboard-url)
+                                   (dom-text (car
+                                              (dom-by-tag (libxml-parse-html-region
+                                                           (point-min)
+                                                           (point-max))
+                                                          'title))))))))
+          (t
+           (call-interactively 'org-insert-link)))))
+
+
+
 ;; ======================================
 ;;; 3. Health & Blood Pressure Logic
 ;; ======================================
@@ -358,6 +389,7 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
          ("C-M-y"     . hy/paste-with-parentheses)
          ("M-,"       . org-insert-structure-template)
          ("C-,"       . hy/org-wrap-with-symbol-smart)
+	 ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
          ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
 	 ("C-c C-x C-f" . hy/pair-pairs-wrap))        ;org-emphasize

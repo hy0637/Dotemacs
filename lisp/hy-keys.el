@@ -1,4 +1,6 @@
 ;;; hy-keys.el --- Optimized keybindings -*- lexical-binding: t; -*-
+;;
+;;
 ;; ======================================
 ;;; Helper Functions
 ;; ======================================
@@ -39,6 +41,7 @@
   ("d" "insert-Drawer"       #'hy/org-insert-drawer-custom)
   ("f" "pair-pairs-Wrap"     #'hy/pair-pairs-wrap)
   ("i" "Insert-prefix-block" #'hy/org-insert-custom-prefix-to-blocks)
+  ("l" "insert-Link-dwim"    #'hy/org-insert-link-dwim)
   ("w" "wrap symbol"         #'hy/org-wrap-with-symbol-smart))
   
 (hy/defkeymap hy-search-prefix-map "Search"

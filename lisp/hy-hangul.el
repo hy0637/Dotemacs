@@ -19,6 +19,13 @@
 ;; v1.2: F9 기능 통합 - 조합 중 F9→한자/기호 변환(기존),
 ;;       완성된 글자에서 F9→커서 위치 글자 한자 변환(바닐라 방식 채택). M-F9 제거
 ;;       C-h I 입력기 도움말 추가
+;;
+;;;; TODO
+;; [ ] activate-input-method에 advice로 Unrecognized input method 에러 방어
+;;     모든 경로(toggle-korean-input-method, C-\, 시작 시, desktop-read) 커버
+;;     condition-case로 에러 잡아 deactivate-input-method 후 메시지 표시
+;;     테스트 곤란으로 보류 중
+
 
 (require 'quail)
 (require 'hanja-util)
