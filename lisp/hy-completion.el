@@ -83,7 +83,8 @@
 ;; =======================================
 ;;; pair-pair-wrap
 ;; =======================================
-;;inspire https://protesilaos.com
+;; inspire https://protesilaos.com
+
 (defcustom hy/pair-pairs
   '((?* :description "Bold"           :pair ?*)
     (?/ :description "Italic"         :pair ?/)
@@ -106,88 +107,185 @@
   :group 'editing
   :type '(alist :key-type character :value-type (plist)))
 
+;; ---------------------------------------
+;; 내부 보조 함수
+;; ---------------------------------------
+
+(defun hy/pair--strings (char)
+  "CHAR에 등록된 (OPEN . CLOSE) 문자열 쌍을 반환. 없으면 nil."
+  (let ((pd (plist-get (cdr (assoc char hy/pair-pairs)) :pair)))
+    (when pd
+      (if (consp pd)
+          (cons (if (characterp (car pd)) (char-to-string (car pd)) (car pd))
+                (if (characterp (cdr pd)) (char-to-string (cdr pd)) (cdr pd)))
+        (let ((s (char-to-string pd))) (cons s s))))))
+
+(defun hy/pair--unwrap-edges (rbeg rend)
+  "RBEG..REND 양끝이 등록된 기호 쌍이면 벗기고 t를 반환. 아니면 nil."
+  (catch 'done
+    (dolist (e hy/pair-pairs)
+      (let ((p (hy/pair--strings (car e))))
+        (when p
+          (let ((ol (length (car p))) (cl (length (cdr p))))
+            (when (and (>= (- rend rbeg) (+ ol cl))
+                       (string= (car p)
+                                (buffer-substring-no-properties rbeg (+ rbeg ol)))
+                       (string= (cdr p)
+                                (buffer-substring-no-properties (- rend cl) rend)))
+              (save-excursion
+                (goto-char (- rend cl)) (delete-char cl)
+                (goto-char rbeg)        (delete-char ol))
+              (message "'%s%s' 제거 완료" (car p) (cdr p))
+              (throw 'done t))))))
+    nil))
+
+(defun hy/pair--unwrap-all (open close beg end)
+  "BEG..END 범위에서 OPEN…CLOSE 쌍을 모두 벗기고 제거 횟수를 반환.
+org 강조 기호는 앞뒤 경계 규칙을 적용하고, 줄머리 리스트 불릿은 보호한다."
+  (let* ((symmetric (and (= (length open) 1) (string= open close)))
+         (re (if symmetric
+                 ;; 그룹1=여는 marker, 그룹2=내용, 그룹3=닫는 marker
+                 (format (concat "\\(?:^\\|[ \t('\"{]\\)"
+                                 "\\(%s\\)"
+                                 "\\([^%s \n]\\(?:[^%s\n]*[^%s \n]\\)?\\)"
+                                 "\\(%s\\)"
+                                 "\\(?:[][ \t.,:!?;'\")}-]\\|$\\)")
+                         (regexp-quote open) open open open
+                         (regexp-quote close))
+               (concat (regexp-quote open) "\\(.*?\\)" (regexp-quote close))))
+         (count 0)
+         (end-marker (copy-marker end)))
+    (save-excursion
+      (goto-char beg)
+      (while (re-search-forward re end-marker t)
+        (cond
+         ;; '- ' 매칭이 줄머리(들여쓰기 포함) 불릿이면 건너뜀
+         ((and (not symmetric)
+               (string= open "- ")
+               (save-excursion
+                 (goto-char (match-beginning 0))
+                 (skip-chars-backward " \t")
+                 (bolp)))
+          (goto-char (1+ (match-beginning 0))))
+         (symmetric
+          (delete-region (match-beginning 3) (match-end 3))
+          (delete-region (match-beginning 1) (match-end 1))
+          (setq count (1+ count))
+          (goto-char (match-beginning 1)))
+         (t
+          (replace-match "\\1" t)
+          (setq count (1+ count))))))
+    (set-marker end-marker nil)
+    count))
+
+;; ---------------------------------------
+;; 사용자 명령
+;; ---------------------------------------
+
+(defun hy/pair-pairs-unwrap-dwim ()
+  "기호 쌍 제거 DWIM. 범위는 항상 선택 영역이 정한다.
+양끝이 등록된 쌍이면 그 쌍만 벗기고,
+아니면 기호를 물어 영역 안의 해당 쌍을 모두 제거한다.
+버퍼 전체는 \\[mark-whole-buffer] 후 실행."
+  (interactive)
+  (if (not (use-region-p))
+      (message "Region이 필요합니다")
+    (let ((rbeg (region-beginning))
+          (rend (region-end)))
+      (unless (hy/pair--unwrap-edges rbeg rend)
+        (let* ((char (read-char "범위에서 제거할 기호: "))
+               (pair (hy/pair--strings char)))
+          (if (not pair)
+              (message "Undefined symbol: %c" char)
+            (let ((n (hy/pair--unwrap-all (car pair) (cdr pair) rbeg rend)))
+              (message "'%s…%s' %d곳 제거" (car pair) (cdr pair) n))))))))
+
 (defun hy/pair-pairs-wrap (char &optional _target)
   "Enclose the active region or the word at point with a pair of CHARs.
-Detects existing open/close delimiters in the region and replaces or inserts accordingly."
-  (interactive "c기호 입력 (*, /, =, (, <...): ")
-  (let* ((entry (assoc char hy/pair-pairs))
-         (pair-data (plist-get (cdr entry) :pair))
-         (open      (if (consp pair-data) (car pair-data) pair-data))
-         (close     (if (consp pair-data) (cdr pair-data) pair-data))
-         (open-str  (if (characterp open)  (char-to-string open)  open))
-         (close-str (if (characterp close) (char-to-string close) close)))
-    (if (not pair-data)
-        (message "Undefined symbol: %c" char)
-      (if (not (use-region-p))
-          ;; region 없음: word at point 감싸기
-          (let* ((bounds (or (bounds-of-thing-at-point 'symbol)
-                             (cons (point) (point))))
-                 (start (car bounds))
-                 (end   (cdr bounds)))
+Detects existing open/close delimiters in the region and replaces or inserts accordingly.
+DEL 입력 시 기호 쌍을 제거(unwrap)한다."
+  (interactive "c기호 입력 (*, /, =, (, <... / DEL=제거): ")
+  (if (eq char ?\C-?)                  ; DEL(backspace) → 벗기기
+      (hy/pair-pairs-unwrap-dwim)
+    (let* ((entry (assoc char hy/pair-pairs))
+           (pair-data (plist-get (cdr entry) :pair))
+           (open      (if (consp pair-data) (car pair-data) pair-data))
+           (close     (if (consp pair-data) (cdr pair-data) pair-data))
+           (open-str  (if (characterp open)  (char-to-string open)  open))
+           (close-str (if (characterp close) (char-to-string close) close)))
+      (if (not pair-data)
+          (message "Undefined symbol: %c" char)
+        (if (not (use-region-p))
+            ;; region 없음: word at point 감싸기
+            (let* ((bounds (or (bounds-of-thing-at-point 'symbol)
+                               (cons (point) (point))))
+                   (start (car bounds))
+                   (end   (cdr bounds)))
+              (save-excursion
+                (goto-char end)   (insert close-str)
+                (goto-char start) (insert open-str)))
+          ;; region 있음
+          (let* ((rbeg (region-beginning))
+                 (rend (region-end))
+                 (all-pairs
+                  (apply #'append
+                         (mapcar (lambda (e)
+                                   (let* ((key (car e))
+                                          (pd  (plist-get (cdr e) :pair)))
+                                     (when (consp pd)
+                                       (let* ((os  (if (characterp (car pd))
+                                                       (char-to-string (car pd))
+                                                     (car pd)))
+                                              (cs  (if (characterp (cdr pd))
+                                                       (char-to-string (cdr pd))
+                                                     (cdr pd)))
+                                              (key-str (char-to-string key)))
+                                         (list (cons os       cs)
+                                               (cons key-str  cs)
+                                               (cons os       key-str)
+                                               (cons key-str  key-str))))))
+                                 hy/pair-pairs)))
+                 (existing-open
+                  (cl-some (lambda (p)
+                             (let ((os (car p)))
+                               (when (string= os (buffer-substring-no-properties
+                                                  rbeg
+                                                  (min (+ rbeg (length os)) rend)))
+                                 os)))
+                           all-pairs))
+                 (existing-close
+                  (cl-some (lambda (p)
+                             (let ((cs (cdr p)))
+                               (when (string= cs (buffer-substring-no-properties
+                                                  (max (- rend (length cs)) rbeg)
+                                                  rend))
+                                 cs)))
+                           all-pairs))
+                 (open-len  (length (or existing-open  "")))
+                 (close-len (length (or existing-close ""))))
             (save-excursion
-              (goto-char end)   (insert close-str)
-              (goto-char start) (insert open-str)))
-        ;; region 있음
-        (let* ((rbeg (region-beginning))
-               (rend (region-end))
-               (all-pairs
-                (apply #'append
-                       (mapcar (lambda (e)
-                                 (let* ((key (car e))
-                                        (pd  (plist-get (cdr e) :pair)))
-                                   (when (consp pd)
-                                     (let* ((os  (if (characterp (car pd))
-                                                     (char-to-string (car pd))
-                                                   (car pd)))
-                                            (cs  (if (characterp (cdr pd))
-                                                     (char-to-string (cdr pd))
-                                                   (cdr pd)))
-                                            (key-str (char-to-string key)))
-                                       (list (cons os       cs)
-                                             (cons key-str  cs)
-                                             (cons os       key-str)
-                                             (cons key-str  key-str))))))
-                               hy/pair-pairs)))
-               (existing-open
-                (cl-some (lambda (p)
-                           (let ((os (car p)))
-                             (when (string= os (buffer-substring-no-properties
-                                                rbeg
-                                                (min (+ rbeg (length os)) rend)))
-                               os)))
-                         all-pairs))
-               (existing-close
-                (cl-some (lambda (p)
-                           (let ((cs (cdr p)))
-                             (when (string= cs (buffer-substring-no-properties
-                                                (max (- rend (length cs)) rbeg)
-                                                rend))
-                               cs)))
-                         all-pairs))
-               (open-len  (length (or existing-open  "")))
-               (close-len (length (or existing-close ""))))
-          (save-excursion
-            ;; 뒤쪽 먼저
-            (if existing-close
-                (progn (goto-char (- rend close-len))
-                       (delete-char close-len)
-                       (insert close-str))
-              (goto-char rend)
-              (insert close-str))
-            ;; 앞쪽
-            (if existing-open
-                (progn (goto-char rbeg)
-                       (delete-char open-len)
-                       (insert open-str))
-              (goto-char rbeg)
-              (insert open-str)))
-          (message "'%s' 완료" (plist-get (cdr entry) :description)))))))
+              ;; 뒤쪽 먼저
+              (if existing-close
+                  (progn (goto-char (- rend close-len))
+                         (delete-char close-len)
+                         (insert close-str))
+                (goto-char rend)
+                (insert close-str))
+              ;; 앞쪽
+              (if existing-open
+                  (progn (goto-char rbeg)
+                         (delete-char open-len)
+                         (insert open-str))
+                (goto-char rbeg)
+                (insert open-str)))
+            (message "'%s' 완료" (plist-get (cdr entry) :description))))))))
 
 (with-eval-after-load 'embark
   (dolist (map (list embark-symbol-map
                      embark-region-map
                      embark-general-map))
     (define-key map (kbd "w") #'hy/pair-pairs-wrap)))
+
 
 
 ;; =======================================
@@ -219,6 +317,7 @@ Detects existing open/close delimiters in the region and replaces or inserts acc
 (use-package completion-preview
   :ensure nil
   :init (global-completion-preview-mode)
+  :hook (emacs-lisp-mode . (lambda () (completion-preview-mode -1)))
   :config
   (push 'org-self-insert-command completion-preview-commands))
 

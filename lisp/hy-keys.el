@@ -34,15 +34,13 @@
   ("d" "Duplicate"           #'duplicate-dwim)
   ("o" "Open newline below"  #'hy/open-line-below)
   ("p" "buffer2PDF"          #'hy/buffer-to-pdf-pandoc)
-  ("w" "Pairs wrap"          #'hy/pair-pairs-wrap)
+  ("w" "Pairs (u)wrap"       #'hy/pair-pairs-wrap)
   ("%" "Replace"             #'query-replace))
 
 (hy/defkeymap hy-org-prefix-map "ORG"
   ("d" "insert-Drawer"       #'hy/org-insert-drawer-custom)
-  ("f" "pair-pairs-Wrap"     #'hy/pair-pairs-wrap)
   ("i" "Insert-prefix-block" #'hy/org-insert-custom-prefix-to-blocks)
-  ("l" "insert-Link-dwim"    #'hy/org-insert-link-dwim)
-  ("w" "wrap symbol"         #'hy/org-wrap-with-symbol-smart))
+  ("l" "insert-Link-dwim"    #'hy/org-insert-link-dwim))
   
 (hy/defkeymap hy-search-prefix-map "Search"
   ("g" "Grep"                #'consult-grep)
