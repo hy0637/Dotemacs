@@ -157,7 +157,7 @@
 
 ;;; ###autoload
 (defun hy/org-insert-custom-prefix-to-blocks (beg end prefix)
-  "선택 영역 내의 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix)을 삽입합니다."
+  "선택 영역 내, 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix) 삽입."
   (interactive "r\ns삽입할 문구를 입력하세요: ") ; r은 영역, s는 문자열 입력을 의미합니다.
   (save-excursion
     (save-restriction
@@ -177,33 +177,86 @@
 
 ;;; ###autoload
 (defun hy/org-insert-link-dwim ()
-;;https://github.com/hrs/dotfiles/blob/main/emacs/.config/emacs/configuration.org
+  ;; https://github.com/hrs/dotfiles/blob/main/emacs/.config/emacs/configuration.org
   "Like `org-insert-link' but with personal dwim preferences."
   (interactive)
   (let* ((point-in-link (org-in-regexp org-link-any-re 1))
          (clipboard-url (when (and kill-ring
-                                   (string-match-p "^http" (current-kill 0)))
-                          (current-kill 0)))
+                                   (stringp (car kill-ring))
+                                   (string-match-p "^https?://" (car kill-ring)))
+                          (car kill-ring)))
          (region-content (when (region-active-p)
                            (buffer-substring-no-properties (region-beginning)
                                                            (region-end)))))
     (cond ((and region-content clipboard-url (not point-in-link))
            (delete-region (region-beginning) (region-end))
            (insert (org-make-link-string clipboard-url region-content))
-           (message clipboard-url))
+           (message "%s" clipboard-url))
           ((and clipboard-url (not point-in-link))
-           (insert (org-make-link-string
-                    clipboard-url
-                    (read-string "title: "
-                                 (with-current-buffer (url-retrieve-synchronously clipboard-url)
-                                   (dom-text (car
-                                              (dom-by-tag (libxml-parse-html-region
-                                                           (point-min)
-                                                           (point-max))
-                                                          'title))))))))
+           (let ((url-buf (url-retrieve-synchronously clipboard-url)))
+             (insert (org-make-link-string
+                      clipboard-url
+                      (read-string "title: "
+                                   (condition-case nil
+                                       (unwind-protect
+                                           (with-current-buffer url-buf
+                                             (let ((dom (condition-case nil
+                                                            (libxml-parse-html-region (point-min) (point-max))
+                                                          (error nil))))
+                                               (if dom
+                                                   (let ((title-node (car (dom-by-tag dom 'title))))
+                                                     (if title-node
+                                                         (string-trim (dom-text title-node))
+                                                       "No Title"))
+                                                 "No Title")))
+                                         (kill-buffer url-buf))
+                                     (error "No Title")))))))
           (t
            (call-interactively 'org-insert-link)))))
 
+
+;;; org-goto-next-paragraph-start START
+
+(defun hy/org--search-visible-line (backward)
+  "Search for the nearest visible non-blank line start.
+BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
+  (let ((regexp "^[ \t]*\\([^ \t\n]\\)")
+        found)
+    (while (and (not found)
+                (if backward
+                    (re-search-backward regexp nil t)
+                  (re-search-forward regexp nil t)))
+      ;; 접힌(invisible) 영역 안의 매칭은 건너뜀
+      (unless (invisible-p (match-beginning 1))
+        (setq found t)))
+    found))
+
+(defun hy/org--land ()
+  "매칭 지점으로 이동 후 리스트/헤딩에 맞게 안착."
+  (goto-char (match-beginning 1))
+  (cond
+   ((org-at-item-p) (goto-char (org-in-item-p)))
+   ((org-at-heading-p) (beginning-of-line))))
+
+;;;###autoload
+(defun hy/org-goto-next-paragraph-start ()
+  "Move point to the next visible paragraph/item/heading."
+  (interactive)
+  (end-of-line)
+  (save-match-data
+    (when (hy/org--search-visible-line nil)
+      (hy/org--land))))
+
+;;;###autoload
+(defun hy/org-goto-previous-paragraph-start ()
+  "Move point to the previous visible paragraph/item/heading."
+  (interactive)
+  (beginning-of-line)
+  (save-match-data
+    (when (hy/org--search-visible-line t)
+      (hy/org--land))))
+
+;;; org-goto-next-paragraph-start END
 
 
 ;; ======================================
@@ -232,26 +285,6 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
                   (push (list sys dia pul) rows))))
             rows))))))
 
-;; (defun hy/bp-parse-table (&optional start-date end-date)
-;;   "Parse Health.org BP table. Returns list of (sys dia pul) plists.
-;; Optionally filter rows between START-DATE and END-DATE (encoded times)."
-;;   (when (file-exists-p hy/f-health)
-;;     (with-current-buffer (find-file-noselect hy/f-health)
-;;       (org-with-wide-buffer
-;;        (goto-char (point-min))
-;;        (let (rows)
-;;          (while (re-search-forward
-;;                  "^|\\s-*\\[\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)" nil t)
-;;            (let* ((row-date (date-to-time (match-string 1)))
-;;                   (cols (org-split-string (thing-at-point 'line) "|"))
-;;                   (sys (and (> (length cols) 1) (string-to-number (string-trim (nth 1 cols)))))
-;;                   (dia (and (> (length cols) 2) (string-to-number (string-trim (nth 2 cols)))))
-;;                   (pul (and (> (length cols) 3) (string-to-number (string-trim (nth 3 cols))))))
-;;              (when (and sys (> sys 0)
-;;                         (or (not start-date) (time-less-p start-date row-date))
-;;                         (or (not end-date)   (time-less-p row-date end-date)))
-;;                (push (list sys dia pul) rows))))
-;;          rows)))))
 
 (defun hy/bp-averages (&optional start-date end-date)
   "Return (avg-sys avg-dia avg-pul count) for BP rows in optional date range."
@@ -388,11 +421,13 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
          :map org-mode-map
          ("C-M-y"     . hy/paste-with-parentheses)
          ("M-,"       . org-insert-structure-template)
-         ("C-,"       . hy/org-wrap-with-symbol-smart)
+	 ("M-n"       . hy/org-goto-next-paragraph-start)
+         ("M-p"       . hy/org-goto-previous-paragraph-start)
+	 ("C-,"       . hy/org-wrap-with-symbol-smart)
 	 ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
          ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
-	 ("C-c C-x C-f" . hy/pair-pairs-wrap))        ;org-emphasize
+	 ("C-c C-x C-f" . hy/pair-pairs-wrap))        ;alternative org-emphasize
   :custom
   (org-agenda-files                    (list hy/f-tasks hy/f-daily hy/f-health))
   (org-startup-indented                t)
@@ -468,7 +503,7 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
 ;;; 5. External Packages
 ;; ======================================
 (use-package org-superstar
-  :ensure nil
+  :ensure t
   :hook (org-mode . org-superstar-mode)
   :config (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "▶" "▷" "►")))
 
@@ -510,6 +545,7 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
 
 
 (use-package valign
+  :ensure t
   ;; :custom
   ;; (valign-fancy-bar t)           ;"May slow down with large tables"
   :hook (org-mode . valign-mode))
