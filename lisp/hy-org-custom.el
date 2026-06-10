@@ -120,38 +120,38 @@
 
 
 ;;; ###autoload
-(defun hy/org-wrap-with-symbol-smart (char)
-  "선택 영역을 기호 쌍으로 감쌉니다.
-- 'm' 또는 '-' 입력 시: [기호][공백][영역][공백][기호]
-- '\"' 또는 '`' 입력 시: [여는 따옴표][영역][닫는 따옴표]"
-  (interactive (list (read-char "기호 입력 (', \", -, m): ")))
-  (let* ((start (region-beginning))
-         (end (region-end))
-         (prefix "")
-         (suffix ""))
-    (cond
-     ;; 1. 쌍따옴표 처리
-     ((equal char ?\")
-      (setq prefix (string #x201c) suffix (string #x201d)))
-     ;; 2. 홑따옴표 처리
-     ((equal char ?')
-      (setq prefix (string #x2018) suffix (string #x2019)))
-     ;; 3. 대시(Em-dash) 처리
-     ((equal char ?m)
-      (setq prefix "— " suffix " —"))
-     ;; 4. 하이픈 처리
-     ((equal char ?-)
-      (setq prefix "- " suffix " -"))
-     ;; 5. 그 외 기호는 앞뒤 동일하게
-     (t
-      (let ((s (char-to-string char)))
-        (setq prefix s suffix s))))
+;; (defun hy/org-wrap-with-symbol-smart (char)
+;;   "선택 영역을 기호 쌍으로 감쌉니다.
+;; - 'm' 또는 '-' 입력 시: [기호][공백][영역][공백][기호]
+;; - '\"' 또는 '`' 입력 시: [여는 따옴표][영역][닫는 따옴표]"
+;;   (interactive (list (read-char "기호 입력 (', \", -, m): ")))
+;;   (let* ((start (region-beginning))
+;;          (end (region-end))
+;;          (prefix "")
+;;          (suffix ""))
+;;     (cond
+;;      ;; 1. 쌍따옴표 처리
+;;      ((equal char ?\")
+;;       (setq prefix (string #x201c) suffix (string #x201d)))
+;;      ;; 2. 홑따옴표 처리
+;;      ((equal char ?')
+;;       (setq prefix (string #x2018) suffix (string #x2019)))
+;;      ;; 3. 대시(Em-dash) 처리
+;;      ((equal char ?m)
+;;       (setq prefix "— " suffix " —"))
+;;      ;; 4. 하이픈 처리
+;;      ((equal char ?-)
+;;       (setq prefix "- " suffix " -"))
+;;      ;; 5. 그 외 기호는 앞뒤 동일하게
+;;      (t
+;;       (let ((s (char-to-string char)))
+;;         (setq prefix s suffix s))))
 
-    (save-excursion
-      (goto-char end)
-      (insert suffix)
-      (goto-char start)
-      (insert prefix))))
+;;     (save-excursion
+;;       (goto-char end)
+;;       (insert suffix)
+;;       (goto-char start)
+;;       (insert prefix))))
 
 
 
@@ -420,10 +420,9 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
          ("C-c c" . org-capture)
          :map org-mode-map
          ("C-M-y"     . hy/paste-with-parentheses)
-         ("M-,"       . org-insert-structure-template)
-	 ("M-n"       . hy/org-goto-next-paragraph-start)
-         ("M-p"       . hy/org-goto-previous-paragraph-start)
-	 ("C-,"       . hy/org-wrap-with-symbol-smart)
+	 ("C-M-n"     . hy/org-goto-next-paragraph-start)
+         ("C-M-p"     . hy/org-goto-previous-paragraph-start)
+	 ("C-,"       . org-insert-structure-template)
 	 ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
          ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
