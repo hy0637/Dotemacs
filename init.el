@@ -291,9 +291,9 @@
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
 
-  :custom
-  (input-method-verbose-flag nil)
-  (input-method-highlight-flag nil)
+  ;; :custom
+  ;; (input-method-verbose-flag nil)
+  ;; (input-method-highlight-flag nil)
 
   :config
   (with-eval-after-load 'korea-util    ;;korea-util.el의 하드코딩 회피
@@ -348,7 +348,7 @@
   :config
   (setq modus-themes-mixed-fonts t
         modus-themes-italic-constructs t)
-  (modus-themes-load-theme 'ef-autumn))
+  (modus-themes-load-theme 'ef-owl))
 
 
 ;; =======================================

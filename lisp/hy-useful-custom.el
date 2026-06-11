@@ -1,6 +1,11 @@
 ;;; -*- lexical-binding: t; -*-
 ;; .emacs.d/lisp/hy-useful-custom.el
 
+(defun hy/emacs-copyright ()
+  "Return Emacs copyright with current year."
+  (format "Copyright © 1996-%s,  Free Software Foundation, Inc."
+          (format-time-string "%Y")))
+
 
 ;;; ###autoload
 ;; (defun hy-today-stamp ()
@@ -36,21 +41,6 @@
   (newline-and-indent))
 
 (global-set-key (kbd "C-c o") 'hy/open-line-below)
-
-;;; ###autoload
-;; (defun hy/duplicate-dwim ()
-;;   "Duplicate the current region if active, otherwise duplicate the current line."
-;;   (interactive)
-;;   (let ((use-region (use-region-p)))
-;;     (save-excursion
-;;       (let ((text (if use-region
-;;                       (buffer-substring (region-beginning) (region-end))
-;;                     (filter-buffer-substring (line-beginning-position) (line-end-position)))))
-;;         (goto-char (if use-region (region-end) (line-end-position)))
-;;         (newline)
-;;         (insert text)))
-;;     ;; Move cursor to the next line for consecutive duplication
-;;     (forward-line 1)))
 
 
 ;;; ###autoload
@@ -92,12 +82,6 @@
     (deactivate-mark)))
 
 
-(defun hy/emacs-copyright ()
-  "Return Emacs copyright with current year."
-  (format "Copyright © 1996-%s,  Free Software Foundation, Inc."
-          (format-time-string "%Y")))
-
-
 (defun hy/keyboard-quit-dwim ()
   "Do-what-I-mean quit behavior.
 Handle 'keyboard-quit' based on the current context, such as an active region, open minibuffer,
@@ -133,6 +117,10 @@ or the Completions buffer."
         (insert (format "(%s)" text))
       (message "Clipboard is empty."))))
 
+
+;; --------------
+;;; Window
+;; --------------
 
 ;;;###autoload
 (defun hy/toggle-window-split-ratio ()
@@ -314,6 +302,7 @@ Kills any running caffeinate process started by caffeine-on."
   (shell-command "pkill caffeinate")
   (message "Caffeine OFF"))
 
+;; --------------
 
 ;;;###autoload
 (defun hy/buffer-to-pdf-pandoc ()
@@ -359,6 +348,90 @@ Requires pandoc and xelatex to be installed."
     (when output
       (shell-command (format "open %s" (shell-quote-argument output)))
       (message "PDF saved: %s" output))))
+
+
+;;;###autoload
+(defun hy/normalize-quotes (beg end)
+  "Convert straight quotes to curly quotes in region or whole buffer."
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end))
+     (list (point-min) (point-max))))
+  (let ((count 0)
+        (end-marker (copy-marker end)))
+    (save-excursion
+      (goto-char beg)
+      (while (re-search-forward "[\"']" end-marker t)
+        (let* ((ch    (char-before))
+               (prev  (char-before (1- (point))))
+               (openp (or (null prev)
+                          (memq prev '(?\s ?\t ?\n ?\( ?\[ ?{ ?“ ?‘)))))
+          (replace-match
+           (cond ((and (eq ch ?\") openp) "“")
+                 ((eq ch ?\")             "”")
+                 ((and (eq ch ?')  openp) "‘")
+                 (t                       "’")))
+          (setq count (1+ count)))))
+    (set-marker end-marker nil)
+    (message "따옴표 %d개 변환" count)))
+
+
+;;;###autoload
+(defun hy/unfill-paragraph ()
+  "Join the current paragraph (or region) into single lines."
+  (interactive)
+  (let ((fill-column most-positive-fixnum))
+    (if (use-region-p)
+        (fill-region (region-beginning) (region-end))
+      (fill-paragraph))))
+
+
+;;;###autoload
+(defun hy/tidy-whitespace (beg end)
+  "Clean up whitespace in region or whole buffer:
+trailing spaces, doubled spaces, and excess blank lines."
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end))
+     (list (point-min) (point-max))))
+  (let ((count 0)
+        (end-marker (copy-marker end)))
+    (save-excursion
+      ;; 행끝 공백
+      (goto-char beg)
+      (while (re-search-forward "[ \t]+$" end-marker t)
+        (replace-match "") (setq count (1+ count)))
+      ;; 본문 속 이중 공백 (들여쓰기는 보호)
+      (goto-char beg)
+      (while (re-search-forward "\\([^ \t\n]\\)[ ]\\{2,\\}" end-marker t)
+        (replace-match "\\1 ") (setq count (1+ count)))
+      ;; 3연속 이상 빈 줄 → 1개로
+      (goto-char beg)
+      (while (re-search-forward "\n\\{3,\\}" end-marker t)
+        (replace-match "\n\n") (setq count (1+ count))))
+    (set-marker end-marker nil)
+    (message "공백 %d곳 정돈" count)))
+
+
+;;;###autoload
+(defun hy/strip-hanja-annotations (beg end)
+  "Remove parenthesized Hanja annotations like 대서(代書)
+in region or whole buffer."
+  (interactive
+   (if (use-region-p)
+       (list (region-beginning) (region-end))
+     (list (point-min) (point-max))))
+  (let ((count 0)
+        (end-marker (copy-marker end)))
+    (save-excursion
+      (goto-char beg)
+      (while (re-search-forward "([一-鿿·]+)" end-marker t)
+        (replace-match "")
+        (setq count (1+ count))))
+    (set-marker end-marker nil)
+    (message "한자 병기 %d곳 제거" count)))
+
+
 
 
 (provide 'hy-useful-custom)

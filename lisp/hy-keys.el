@@ -30,15 +30,23 @@
 (hy/defkeymap hy-edit-prefix-map "Edit"
   ("i" "Indent dwim"         #'hy/simple-indent-dwim)
   ("r" "Regexp replace"      #'hy/query-replace-regexp-dwim)
-  ("c" "Current line"        #'hy/select-current-line)
+  ("l" "current Line"        #'hy/select-current-line)
   ("d" "Duplicate"           #'duplicate-dwim)
   ("o" "Open newline below"  #'hy/open-line-below)
   ("p" "buffer2PDF"          #'hy/buffer-to-pdf-pandoc)
-  ("w" "Pairs (u)wrap"       #'hy/pair-pairs-wrap)
+  ("u" "Unfill paragraph"    #'hy/unfill-paragraph)
   ("%" "Replace"             #'query-replace))
+
+(hy/defkeymap hy-finishing-prefix-map "Finishing"
+  ("c" "strip pair Content"  #'hy/strip-pair-with-content)
+  ("h" "strip pair Hanja"    #'hy/strip-hanja-annotations)
+  ("q" "normalize Quotes"    #'hy/normalize-quotes)
+  ("w" "Pairs (u)wrap"       #'hy/pair-pairs-wrap)
+  ("W" "tidy-Witespace"      #'hy/tidy-whitespace))
 
 (hy/defkeymap hy-org-prefix-map "ORG"
   ("d" "insert-Drawer"       #'hy/org-insert-drawer-custom)
+  ("e" "toggle-emphasis"     #'hy/org-toggle-emphasis-markers)
   ("i" "Insert-prefix-block" #'hy/org-insert-custom-prefix-to-blocks)
   ("l" "insert-Link-dwim"    #'hy/org-insert-link-dwim))
   
@@ -47,7 +55,7 @@
   ("l" "Line"                #'consult-line)
   ("o" "Outline"             #'consult-outline)
   ("u" "Unified search"      #'hy/search-unified)
-  ("m" "Imenu"               #'consult-imenu))
+  ("m" "iMenu"               #'consult-imenu))
 
 (hy/defkeymap hy-life-prefix-map "Life"
   ("l" "Lunar date"          #'hy/show-lunar-date)
@@ -76,6 +84,7 @@
 
 (hy/defkeymap hy-emacs-prefix-map "Master"
   ("e" "Edit"                hy-edit-prefix-map)
+  ("f" "Finishing"           hy-finishing-prefix-map)
   ("l" "Life"                hy-life-prefix-map)
   ("m" "Media"               hy-media-prefix-map)
   ("o" "ORG"                 hy-org-prefix-map)

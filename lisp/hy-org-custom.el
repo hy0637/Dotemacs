@@ -120,42 +120,6 @@
 
 
 ;;; ###autoload
-;; (defun hy/org-wrap-with-symbol-smart (char)
-;;   "선택 영역을 기호 쌍으로 감쌉니다.
-;; - 'm' 또는 '-' 입력 시: [기호][공백][영역][공백][기호]
-;; - '\"' 또는 '`' 입력 시: [여는 따옴표][영역][닫는 따옴표]"
-;;   (interactive (list (read-char "기호 입력 (', \", -, m): ")))
-;;   (let* ((start (region-beginning))
-;;          (end (region-end))
-;;          (prefix "")
-;;          (suffix ""))
-;;     (cond
-;;      ;; 1. 쌍따옴표 처리
-;;      ((equal char ?\")
-;;       (setq prefix (string #x201c) suffix (string #x201d)))
-;;      ;; 2. 홑따옴표 처리
-;;      ((equal char ?')
-;;       (setq prefix (string #x2018) suffix (string #x2019)))
-;;      ;; 3. 대시(Em-dash) 처리
-;;      ((equal char ?m)
-;;       (setq prefix "— " suffix " —"))
-;;      ;; 4. 하이픈 처리
-;;      ((equal char ?-)
-;;       (setq prefix "- " suffix " -"))
-;;      ;; 5. 그 외 기호는 앞뒤 동일하게
-;;      (t
-;;       (let ((s (char-to-string char)))
-;;         (setq prefix s suffix s))))
-
-;;     (save-excursion
-;;       (goto-char end)
-;;       (insert suffix)
-;;       (goto-char start)
-;;       (insert prefix))))
-
-
-
-;;; ###autoload
 (defun hy/org-insert-custom-prefix-to-blocks (beg end prefix)
   "선택 영역 내, 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix) 삽입."
   (interactive "r\ns삽입할 문구를 입력하세요: ") ; r은 영역, s는 문자열 입력을 의미합니다.
@@ -172,7 +136,6 @@
         (forward-line 1))))
   (deactivate-mark)
   (message "삽입 완료!" prefix))
-
 
 
 ;;; ###autoload
@@ -257,6 +220,15 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
       (hy/org--land))))
 
 ;;; org-goto-next-paragraph-start END
+
+
+;;;###autoload
+(defun hy/org-toggle-emphasis-markers ()
+  "Toggle visibility of org emphasis markers."
+  (interactive)
+  (setq org-hide-emphasis-markers (not org-hide-emphasis-markers))
+  (font-lock-flush)
+  (message "강조 기호 %s" (if org-hide-emphasis-markers "숨김" "표시")))
 
 
 ;; ======================================
