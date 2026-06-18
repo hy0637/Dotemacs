@@ -414,22 +414,72 @@ trailing spaces, doubled spaces, and excess blank lines."
 
 
 ;;;###autoload
-(defun hy/strip-hanja-annotations (beg end)
-  "Remove parenthesized Hanja annotations like 대서(代書)
-in region or whole buffer."
+(defun hy/manage-hanja-annotations (beg end)
+  "Manage Hanja annotations in region or whole buffer by choosing an action.
+[1] Wrap:  代書   -> (代書)  (괄호 감싸기)
+[2] Strip: (代書) -> 代書    (괄호만 벗기기)
+[3] Erase: (代書) -> \"\"      (한자 병기 통째로 삭제)"
   (interactive
    (if (use-region-p)
        (list (region-beginning) (region-end))
      (list (point-min) (point-max))))
-  (let ((count 0)
-        (end-marker (copy-marker end)))
-    (save-excursion
-      (goto-char beg)
-      (while (re-search-forward "([一-鿿·]+)" end-marker t)
-        (replace-match "")
-        (setq count (1+ count))))
-    (set-marker end-marker nil)
-    (message "한자 병기 %d곳 제거" count)))
+  
+  (let ((choice (read-char-from-minibuffer "선택 [1] 감싸기(Wrap)  [2] 괄호 벗기기(Strip)  [3] 통째로 삭제(Erase): ")))
+    (cond
+     ;; -------------------------------------------------------------
+     ;; [1번] 한자 -> (한자) 감싸기
+     ;; -------------------------------------------------------------
+     ((eq choice ?1)
+      (let ((count 0)
+            (end-marker (copy-marker end)))
+        (save-excursion
+          (goto-char beg)
+          (while (re-search-forward "[一-鿿·]+" end-marker t)
+            (let ((match-beg (match-beginning 0))
+                  (match-end (match-end 0)))
+              (unless (and (eq (char-before match-beg) ?\()
+                           (eq (char-after match-end) ?\)))
+                (replace-match "(\\&)" t)
+                (setq count (1+ count))))))
+        (set-marker end-marker nil)
+        (message "한자 괄호 감싸기 %d곳 완료" count)))
+
+     ;; -------------------------------------------------------------
+     ;; [2번] (한자) -> 한자 (괄호만 삭제)
+     ;; -------------------------------------------------------------
+     ((eq choice ?2)
+      (let ((count 0)
+            (end-marker (copy-marker end)))
+        (save-excursion
+          (goto-char beg)
+          (while (re-search-forward "(\\([一-鿿·]+\\))" end-marker t)
+            (replace-match "\\1" t)
+            (setq count (1+ count))))
+        (set-marker end-marker nil)
+        (message "한자 괄호 벗기기 %d곳 완료" count)))
+
+     ;; -------------------------------------------------------------
+     ;; [3번] (한자) -> "" (괄호와 한자 모두 삭제)
+     ;; -------------------------------------------------------------
+     ((eq choice ?3)
+      (let ((count 0)
+            (end-marker (copy-marker end)))
+        (save-excursion
+          (goto-char beg)
+          (while (re-search-forward "([一-鿿·]+)" end-marker t)
+            (replace-match "")
+            (setq count (1+ count))))
+        (set-marker end-marker nil)
+        (message "한자 병기 %d곳 통째로 삭제 완료" count)))
+
+     ;; -------------------------------------------------------------
+     ;; 잘못된 입력 처리
+     ;; -------------------------------------------------------------
+     (t
+      (message "취소되었습니다.")))))
+
+
+
 
 
 

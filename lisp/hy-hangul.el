@@ -326,16 +326,21 @@
   (when (eq (selected-window) (minibuffer-window))
     (add-hook 'minibuffer-exit-hook #'quail-exit-from-minibuffer))
   (setq-local input-method-function #'hy/hangul-input-method)
-  (global-set-key (kbd "<f9>") #'hy/hangul-to-hanja-at-point))
+  (setq-local input-method-function #'hy/hangul-input-method)
+  (local-set-key (kbd "<f9>")       #'hy/hangul-to-hanja-at-point))
+  ;; (global-set-key (kbd "<f9>") #'hy/hangul-to-hanja-at-point)
 
 (defun hy/hangul-deactivate ()
   (hy/hangul--flush) (hy/hangul--clear)
   (quail-delete-overlays)
-  (kill-local-variable 'input-method-function))
+  (kill-local-variable 'input-method-function)
+  ; 로컬 맵에서 키 바인딩 제거
+  (local-unset-key (kbd "<f9>")))
 
 (register-input-method
  "korean-hy-hangul" "Korean" #'hy/hangul-activate "한2"
  "두벌식 한글 입력기")
+
 
 (provide 'hy-hangul)
 ;;; hy-hangul.el ends here

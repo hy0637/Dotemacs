@@ -42,6 +42,16 @@
       (error (message "Error occurred during move.")))))
 
 
+(defun hy/dired-sort-by-time-and-goto-top ()
+  "Sort by time, revert, and move to the top while keeping directory-first setting."
+  (interactive)
+  ;; 기존의 옵션들에 '-t'를 추가하고 '--group-directories-first'를 유지.
+  (dired-sort-other "-AGFhlv --group-directories-first -t --time-style=long-iso")
+  (revert-buffer)
+  (goto-char (point-min))
+  (dired-next-line 4))
+
+
 ;; ======================================
 ;;; Dired Main Configuration
 ;; ======================================
@@ -57,10 +67,11 @@
   (dired-free-space nil)
   :bind
   (:map dired-mode-map
-   ("RET" . hy/dired-open-dwim)
-   ("C-<return>" . dired-do-open)
-   ("M" . hy/dired-move-to-pdf-folder-safe)
-   ("/" . consult-line)))
+	("F"          . hy/dired-sort-by-time-and-goto-top)
+	("M"          . hy/dired-move-to-pdf-folder-safe)
+	("/"          . consult-grep)
+	("RET"        . hy/dired-open-dwim)
+	("C-<return>" . dired-do-open)))
 
 
 (provide 'hy-dired-custom)

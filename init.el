@@ -1,11 +1,8 @@
 ;; -*- lexical-binding: t -*-
 ;;  emacs conf for macOS
-;;  ver260602
+;;  ver260616
 
 ;; CODE
-
-
-;; (setq debug-on-error t)  ;; 디버깅 후 제거
 
 ;;
 ;; =======================================
@@ -266,10 +263,11 @@
 	(conf-dir user-emacs-directory))
     (set-register ?i `(file . ,(emacs/dir "init.el")))
     (set-register ?l `(file . ,(emacs/dir "lisp/")))
-    (set-register ?r `(file . ,(concat org-dir "cReading.org")))
-    (set-register ?d `(file . ,(concat org-dir "Daily.org")))
-    (set-register ?n `(file . ,(concat org-dir "cNotes.org")))
-    (set-register ?p `(file . ,(dropbox/dir "pdf"))))
+    ;; (set-register ?r `(file . ,(concat org-dir "cReading.org")))
+    ;; (set-register ?d `(file . ,(concat org-dir "Daily.org")))
+    ;; (set-register ?n `(file . ,(concat org-dir "cNotes.org")))
+    (set-register ?p `(file . ,(dropbox/dir "pdf")))
+    (set-register ?P `(file . ,(dropbox/dir "Person"))))
   (set-register ?o `(file . ,default-directory))
   :custom
   (register-preview-delay 0.5))
@@ -285,18 +283,30 @@
   (advice-add 'set-language-environment-input-method :override #'ignore)
   (set-locale-environment "ko_KR.UTF-8")
   (advice-remove 'set-language-environment-input-method #'ignore)
+  
+  ;; 기본 입력기 설정
   (setq default-input-method "korean-hy-hangul")
   (prefer-coding-system 'utf-8)
   (set-default-coding-systems 'utf-8)
   (set-terminal-coding-system 'utf-8)
   (set-keyboard-coding-system 'utf-8)
 
-  ;; :custom
-  ;; (input-method-verbose-flag nil)
-  ;; (input-method-highlight-flag nil)
-
   :config
-  (with-eval-after-load 'korea-util    ;;korea-util.el의 하드코딩 회피
+  ;; [핵심 방어막] 전역에서 어떤 경로로든 존재하지 않는 입력기 호출 시 에러 방어 및 기본 자판 탈출
+  (define-advice activate-input-method (:around (orig-fun input-method &rest args) prevent-unrecognized-error)
+    "존재하지 않는 입력기 호출 시 에러를 방어하고 안전하게 기본 탈출합니다."
+    (condition-case err
+        (apply orig-fun input-method args)
+      (error
+       (message "⚠️ 입력기 오류 감지: %s. 안전 모드로 전환합니다." (error-message-string err))
+       ;; 에러 발생 시 시스템이 먹통이 되지 않도록 hy-hangul을 재요구하거나 안전하게 입력기 해제
+       (unless (assoc "korean-hy-hangul" input-method-alist)
+         (require 'hy-hangul nil t))
+       (deactivate-input-method)
+       (message "✅ [입력기 초기화 완료] 시스템 안정 상태를 유지합니다."))))
+
+  ;; korea-util.el의 하드코딩 회피 및 토글 구조 안정화
+  (with-eval-after-load 'korea-util
     (advice-add 'toggle-korean-input-method :override
       (lambda ()
         (interactive)
@@ -507,8 +517,11 @@
   (defun hy/desktop-read-at-point ()
     "Restore the saved desktop session."
     (interactive)
+    (unless (assoc "korean-hy-hangul" input-method-alist)
+      (require 'hy-hangul nil t))
     (desktop-read user-emacs-directory)
     (message "✅ [Layout Restored] Previous session has been restored."))
   :bind
   (("C-x r S" . hy/desktop-save-at-point)   ; Save Layout
    ("C-x r R" . hy/desktop-read-at-point))) ; Restore Layout
+

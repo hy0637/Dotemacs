@@ -39,15 +39,17 @@
 
 (hy/defkeymap hy-finishing-prefix-map "Finishing"
   ("c" "strip pair Content"  #'hy/strip-pair-with-content)
-  ("h" "strip pair Hanja"    #'hy/strip-hanja-annotations)
+  ("h" "manage Hanja"        #'hy/manage-hanja-annotations)
   ("q" "normalize Quotes"    #'hy/normalize-quotes)
   ("w" "Pairs (u)wrap"       #'hy/pair-pairs-wrap)
   ("W" "tidy-Witespace"      #'hy/tidy-whitespace))
 
 (hy/defkeymap hy-org-prefix-map "ORG"
+  ("b" "insert-prefix-Block" #'hy/org-insert-custom-prefix-to-blocks)
   ("d" "insert-Drawer"       #'hy/org-insert-drawer-custom)
   ("e" "toggle-emphasis"     #'hy/org-toggle-emphasis-markers)
-  ("i" "Insert-prefix-block" #'hy/org-insert-custom-prefix-to-blocks)
+  ("i" "insert Img"          #'hy/org-insert-image)
+  ("I" "insert Img manual"   #'hy/org-insert-image-manual)
   ("l" "insert-Link-dwim"    #'hy/org-insert-link-dwim))
   
 (hy/defkeymap hy-search-prefix-map "Search"
@@ -68,9 +70,7 @@
 
 (hy/defkeymap hy-media-prefix-map "Media"
   ("P" "Play radio"          #'hy/radio-play)
-  ("S" "Stop radio"          #'hy/radio-stop)
-  ("i" "Insert img"          #'hy/org-insert-image)
-  ("I" "Insert img manual"   #'hy/org-insert-image-manual))
+  ("S" "Stop radio"          #'hy/radio-stop))
   ;; ("s" "Screenshot"          #'hy/org-screenshot))
 
 (hy/defkeymap hy-window-prefix-map "Window"

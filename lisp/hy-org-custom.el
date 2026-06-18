@@ -458,13 +458,18 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
                     "%^{메모} |")
            :prepend t :immediate-finish t)
 
-          ("h" "Habit: 혈압" entry (file+headline ,hy/f-health "습관 관리")
-           "* TODO 혈압 측정\nSCHEDULED: %t\n:PROPERTIES:\n:STYLE: habit\n:END:" :immediate-finish t)
+	  ("f" "Finance" table-line
+           (file ,(expand-file-name "Finance.org" hy/org-person-dir))
+           "| %(format-time-string \"%Y-%m-%d\") | %^{항목} | %^{분류|식비|교통|주거|기타|경조사} | %^{수입|0} | %^{지출|0} | %^{비고} |"
+           :prepend nil :immediate-finish t)
+
+          ;; ("h" "Habit: 혈압" entry (file+headline ,hy/f-health "습관 관리")
+          ;;  "* TODO 혈압 측정\nSCHEDULED: %t\n:PROPERTIES:\n:STYLE: habit\n:END:" :immediate-finish t)
 
           ("r" "Reading" entry (file ,hy/f-read)
 	   "* %?" :unnarrowed t) ;; :empty-lines-after
 
-          ("m" "경조사" table-line (file ,hy/f-money)
+          ("m" "aMoney" table-line (file ,hy/f-money)
            ,(format "| %%^{구분} | %%^{일자|%s} | %%^{이름} | %%^{연락처} | %%^{관계} | %%^{종류} | %%^{금액} | %%^{메모} |"
                     (format-time-string "%Y-%m-%d"))
            :prepend nil))))
