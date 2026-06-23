@@ -392,9 +392,10 @@ Optionally filter rows between START-DATE and END-DATE (encoded times)."
          ("C-c c" . org-capture)
          :map org-mode-map
          ("C-M-y"     . hy/paste-with-parentheses)
+         ("C-M-'"     . hy/normalize-quotes)
 	 ("M-n"       . hy/org-goto-next-paragraph-start)
          ("M-p"       . hy/org-goto-previous-paragraph-start)
-	 ("C-,"       . org-insert-structure-template)
+	 ("M-,"       . org-insert-structure-template)
 	 ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
          ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)

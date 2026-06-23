@@ -351,32 +351,6 @@ Requires pandoc and xelatex to be installed."
 
 
 ;;;###autoload
-(defun hy/normalize-quotes (beg end)
-  "Convert straight quotes to curly quotes in region or whole buffer."
-  (interactive
-   (if (use-region-p)
-       (list (region-beginning) (region-end))
-     (list (point-min) (point-max))))
-  (let ((count 0)
-        (end-marker (copy-marker end)))
-    (save-excursion
-      (goto-char beg)
-      (while (re-search-forward "[\"']" end-marker t)
-        (let* ((ch    (char-before))
-               (prev  (char-before (1- (point))))
-               (openp (or (null prev)
-                          (memq prev '(?\s ?\t ?\n ?\( ?\[ ?{ ?“ ?‘)))))
-          (replace-match
-           (cond ((and (eq ch ?\") openp) "“")
-                 ((eq ch ?\")             "”")
-                 ((and (eq ch ?')  openp) "‘")
-                 (t                       "’")))
-          (setq count (1+ count)))))
-    (set-marker end-marker nil)
-    (message "따옴표 %d개 변환" count)))
-
-
-;;;###autoload
 (defun hy/unfill-paragraph ()
   "Join the current paragraph (or region) into single lines."
   (interactive)
@@ -414,6 +388,49 @@ trailing spaces, doubled spaces, and excess blank lines."
 
 
 ;;;###autoload
+(defun hy/normalize-quotes (beg end &optional reverse)
+  "Convert straight quotes to curly quotes in region or whole buffer.
+With a prefix argument REVERSE (e.g., C-u), convert curly quotes back to straight quotes.
+Automatically skips Org-mode src blocks to prevent code syntax errors."
+  (interactive
+   (let ((r-beg (if (use-region-p) (region-beginning) (point-min)))
+         (r-end (if (use-region-p) (region-end) (point-max))))
+     (list r-beg r-end current-prefix-arg)))
+  (let ((count 0)
+        (end-marker (copy-marker end)))
+    (save-excursion
+      (goto-char beg)
+      (if reverse
+          ;; [반대 동작] 둥근 따옴표 -> 곧은 따옴표
+          (while (re-search-forward "[“”‘’]" end-marker t)
+            ;; Org-mode 소스 블록 내부라면 건너뜀
+            (unless (and (derived-mode-p 'org-mode)
+                         (eq (org-element-type (org-element-at-point)) 'src-block))
+              (let ((ch (char-before)))
+                (replace-match
+                 (cond ((memq ch '(?“ ?”)) "\"")
+                       (t "'")))
+                (setq count (1+ count)))))
+        ;; [기존 동작] 곧은 따옴표 -> 둥근 따옴표
+        (while (re-search-forward "[\"']" end-marker t)
+          ;; Org-mode 소스 블록 내부라면 건너뜀
+          (unless (and (derived-mode-p 'org-mode)
+                       (eq (org-element-type (org-element-at-point)) 'src-block))
+            (let* ((ch    (char-before))
+                   (prev  (char-before (1- (point))))
+                   (openp (or (null prev)
+                              (memq prev '(?\s ?\t ?\n ?\( ?\[ ?{ ?“ ?‘)))))
+              (replace-match
+               (cond ((and (eq ch ?\") openp) "“")
+                     ((eq ch ?\")             "”")
+                     ((and (eq ch ?')  openp) "‘")
+                     (t                       "’")))
+              (setq count (1+ count)))))))
+    (set-marker end-marker nil)
+    (message "%s 따옴표 %d개 변환 완료" (if reverse "곧은" "둥근") count)))
+
+
+;;;###autoload
 (defun hy/manage-hanja-annotations (beg end)
   "Manage Hanja annotations in region or whole buffer by choosing an action.
 [1] Wrap:  代書   -> (代書)  (괄호 감싸기)
@@ -434,7 +451,7 @@ trailing spaces, doubled spaces, and excess blank lines."
             (end-marker (copy-marker end)))
         (save-excursion
           (goto-char beg)
-          (while (re-search-forward "[一-鿿·]+" end-marker t)
+          (while (re-search-forward "[一-鿿]+" end-marker t)
             (let ((match-beg (match-beginning 0))
                   (match-end (match-end 0)))
               (unless (and (eq (char-before match-beg) ?\()
@@ -452,7 +469,7 @@ trailing spaces, doubled spaces, and excess blank lines."
             (end-marker (copy-marker end)))
         (save-excursion
           (goto-char beg)
-          (while (re-search-forward "(\\([一-鿿·]+\\))" end-marker t)
+          (while (re-search-forward "(\\([一-鿿]+\\))" end-marker t)
             (replace-match "\\1" t)
             (setq count (1+ count))))
         (set-marker end-marker nil)
@@ -466,7 +483,7 @@ trailing spaces, doubled spaces, and excess blank lines."
             (end-marker (copy-marker end)))
         (save-excursion
           (goto-char beg)
-          (while (re-search-forward "([一-鿿·]+)" end-marker t)
+          (while (re-search-forward "([一-鿿]+)" end-marker t)
             (replace-match "")
             (setq count (1+ count))))
         (set-marker end-marker nil)
