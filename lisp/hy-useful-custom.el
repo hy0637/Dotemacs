@@ -44,6 +44,13 @@
 
 
 ;;; ###autoload
+(defun hy/join-next-line ()
+  "Join the current line with the following line."
+  (interactive)
+  (join-line 1))
+
+
+;;; ###autoload
 (defun hy/query-replace-regexp-dwim (arg)
   "Replace in region if active, else in whole buffer."
   (interactive "P")
