@@ -159,9 +159,7 @@
          ;; (focus-in-hook . hy/deactivate-input-method))
   
   :custom
-  ;; -------------------------------------------
-  ;; [추가] Dropbox 동기화 충돌 방지 (경로 로컬 격리)
-  ;; -------------------------------------------
+  ;; Dropbox sync 충돌 방지 (경로 로컬 격리)
   (create-lockfiles nil)                                          ; 충돌 링크(.#파일) 생성 억제
   (backup-directory-alist `(("." . ,(emacs/dir "backups/"))))     ; 백업 파일 로컬 이동
   (auto-save-file-name-transforms `((".*" ,(emacs/dir "auto-save/") t))) ; 임시 저장 로컬 이동
@@ -172,8 +170,8 @@
   (even-window-sizes 'height-only)
   (window-sides-vertical nil)
   (switch-to-buffer-in-dedicated-window 'pop)
-  (split-height-threshold 35)      ; 세로가 35줄 이하이면 세로 분할 안 함
-  (split-width-threshold 85)       ; 가로가 85자 이상이면 가로 분할 선호
+  ;; (split-height-threshold 35)      ; 세로가 35줄 이하이면 세로 분할 안 함
+  ;; (split-width-threshold 85)       ; 가로가 85자 이상이면 가로 분할 선호
   (window-min-height 3)
   (window-min-width 30)
 
@@ -243,12 +241,12 @@
 (use-package autorevert
   :ensure nil
   :custom
-  (auto-revert-interval 2)                  ; [최적화] 60초에서 2초로 단축하여 실시간 동기화 체감 향상
-  (auto-revert-check-vc-info nil)            ; 버전 관리 감지를 꺼서 성능 오버헤드 방지
-  (global-auto-revert-non-file-buffers t)    ; 파일이 아닌 버퍼(Agenda 등)도 함께 갱신
+  (auto-revert-interval 2)                ; [최적화] 60초에서 2초로 단축하여 실시간 동기화 체감 향상
+  (auto-revert-check-vc-info nil)         ; 버전 관리 감지를 꺼서 성능 오버헤드 방지
+  (global-auto-revert-non-file-buffers t) ; 파일이 아닌 버퍼(Agenda 등)도 함께 갱신
   :config
   (global-auto-revert-mode t)
-  ;; Mac 화면 포커스가 돌아왔을 때(창 전환 시) Dropbox 변경분을 즉시 강제 갱신하는 정교한 로직 유지
+  ;; Mac 화면 포커스가 돌아왔을 때(창 전환 시) Dropbox auto Sync
   (add-function :after after-focus-change-function
                 (lambda ()
                   (when (and (frame-focus-state)

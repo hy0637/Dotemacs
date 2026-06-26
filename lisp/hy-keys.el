@@ -80,7 +80,8 @@
   ("i" "Height 1/3-2/3"      #'hy/toggle-window-height-ratio)
   ("k" "Pin/Unpin"           #'hy/toggle-window-dedicated)
   ("l" "3-Win Layout"        #'hy/layout-3-windows-center-focus)
-  ("m" "Split 3-Column"      #'hy/split-window-three-column))
+  ("m" "Split 3-Column"      #'hy/split-window-three-column)
+  ("n" "sidebar layout-20"   #'hy/toggle-sidebar-layout-20))
 
 (hy/defkeymap hy-emacs-prefix-map "Master"
   ("e" "Edit"                hy-edit-prefix-map)

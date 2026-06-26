@@ -279,14 +279,37 @@ excluding the Dock and Menu bar."
   (message "▣ center 2/3"))
 
 
-;; (defun hy/Bdays ()
-;;   "Return the elapsed days of BP medication since 2024-12-31 as a string.
-;; This is a helper function for Org-capture templates."
-;;   (let* ((target-date (encode-time 0 0 0 4 3 2026)) ; 기준일: 2026년 3월 4일
-;;          ;; 기준일을 1일로 포함하여 경과일 계산
-;;          (diff-days (1+ (floor (/ (float-time (time-subtract (current-time) target-date)) 
-;;                                   86400)))))
-;;     (format "Day %d: BP 💊" diff-days)))
+;;;###autoload
+(defun hy/toggle-sidebar-layout-20 ()
+  "Set the leftmost window's width to exactly 20% of the frame.
+If only one window exists, it automatically splits the window right (C-x 3)
+and adjusts the left window to 20% and the right window to 80%."
+  (interactive)
+  (let ((windows (window-list)))
+    ;; 1. 창이 1개인 경우 자동으로 우측 분할 처리
+    (when (= (length windows) 1)
+      (split-window-right)
+      (setq windows (window-list))) ; 분할 후 창 목록 갱신
+    
+    ;; 2. 가장 왼쪽에 배치된 창 찾기
+    (let* ((leftmost-window (car (sort windows (lambda (w1 w2)
+                                                 (< (car (window-edges w1))
+                                                    (car (window-edges w2)))))))
+           (total-width (frame-width))
+           (target-width (round (* total-width 0.20)))
+           (current-width (window-total-width leftmost-window))
+           (delta (- target-width current-width)))
+      
+      ;; 3. 가장 왼쪽 창을 잠시 안전하게 선택하여 크기를 정확히 조절
+      (save-selected-window
+        (select-window leftmost-window)
+        (condition-case nil
+            (window-resize leftmost-window delta t)
+          (error
+           ;; window-resize가 실패할 경우를 대비한 하드웨어 스케일러 백업
+           (adjust-window-trailing-edge leftmost-window delta t))))
+      
+      (message "Sidebar layout fixed: Left window allocated 20%% of frame"))))
 
 
 ;;;###autoload
@@ -308,8 +331,8 @@ Kills any running caffeinate process started by caffeine-on."
   (interactive)
   (shell-command "pkill caffeinate")
   (message "Caffeine OFF"))
+;; ================
 
-;; --------------
 
 ;;;###autoload
 (defun hy/buffer-to-pdf-pandoc ()
