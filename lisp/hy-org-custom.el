@@ -9,7 +9,7 @@
 ;; ======================================
 ;;; 0. Load Path & Sub-modules Extension
 ;; ======================================
-(defvar hy/lisp-path)  ;; init.el에 정의된 전역 변수를 재사용 위한 선언 (컴파일 경고 방지)
+(defvar hy/lisp-path)  ;; init.el에 정의된 전역 변수 재사용(컴파일 경고 방지)
 
 (when (boundp 'hy/lisp-path)
   (add-to-list 'load-path hy/lisp-path))
@@ -20,6 +20,7 @@
 (autoload 'hy/show-bp-stats-by-tag "hy-org-health" "Show BP stats report." t)
 (autoload 'hy/Bdays "hy-org-health" "BP days tag." nil)
 (autoload 'hy/get-bp-stats "hy-org-health" "Get BP stats." nil)
+
 
 ;; ======================================
 ;;; 1. Variables & File Paths
@@ -393,22 +394,6 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
   ;; (valign-fancy-bar t)           ;"May slow down with large tables"
   :hook (org-mode . valign-mode))
 
-
-;; ======================================
-;;; denote
-;; ======================================
-(use-package denote
-  :defer t
-  :bind (("C-c n n" . denote)
-         ("C-c n i" . denote-link)
-         ("C-c n b" . denote-show-backlinks-buffer)
-         ("C-c n r" . denote-rename-file))
-  :config
-  (setq denote-directory (dropbox/dir "org/denote")
-        denote-file-type nil)
-  (unless (file-exists-p denote-directory)
-    (make-directory denote-directory t))
-  (denote-menu-bar-mode -1))
 
 
 (provide 'hy-org-custom)

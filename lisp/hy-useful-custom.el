@@ -505,8 +505,5 @@ Automatically skips Org-mode src blocks to prevent code syntax errors."
 
 
 
-
-
-
 (provide 'hy-useful-custom)
 ;;; hy-useful-custom.el ends here

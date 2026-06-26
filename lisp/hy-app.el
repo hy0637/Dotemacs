@@ -94,5 +94,23 @@
     (message "📝 편집 모드")))
 
 
+;; ======================================
+;;; denote
+;; ======================================
+(use-package denote
+  :defer t
+  :bind (("C-c n n" . denote)
+         ("C-c n i" . denote-link)
+         ("C-c n b" . denote-show-backlinks-buffer)
+         ("C-c n r" . denote-rename-file))
+  :config
+  (setq denote-directory (dropbox/dir "org/denote")
+        denote-file-type nil)
+  (unless (file-exists-p denote-directory)
+    (make-directory denote-directory t))
+  (denote-menu-bar-mode -1))
+
+
+
 (provide 'hy-app)
 ;;; hy-app.el ends here

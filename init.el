@@ -1,4 +1,4 @@
-;; -*- lexical-binding: t -*-
+;;; -*- lexical-binding: t -*-
 ;;  emacs conf for macOS
 ;;  ver260616
 
@@ -62,7 +62,7 @@
       use-package-always-defer nil
       use-package-expand-minimally t)
 
-(package-initialize)
+ (package-initialize)
 
 
 ;; =======================================
@@ -148,7 +148,7 @@
 
 
 ;; =======================================
-;;; Emacs UI and behavior
+;;; Emacs UI and behavior & Dropbox Config
 ;; =======================================
 (use-package emacs
   :init
@@ -159,6 +159,13 @@
          ;; (focus-in-hook . hy/deactivate-input-method))
   
   :custom
+  ;; -------------------------------------------
+  ;; [추가] Dropbox 동기화 충돌 방지 (경로 로컬 격리)
+  ;; -------------------------------------------
+  (create-lockfiles nil)                                          ; 충돌 링크(.#파일) 생성 억제
+  (backup-directory-alist `(("." . ,(emacs/dir "backups/"))))     ; 백업 파일 로컬 이동
+  (auto-save-file-name-transforms `((".*" ,(emacs/dir "auto-save/") t))) ; 임시 저장 로컬 이동
+
   ;; Win
   (split-window-preferred-direction 'horizontal)
   (window-combination-resize t)
@@ -194,12 +201,18 @@
   (kill-whole-line 1)
   (next-line-add-newlines nil)
   (enable-recursive-minibuffers t)
-  (create-lockfiles nil)
 
   :config
   (global-font-lock-mode 1)
   (minibuffer-depth-indicate-mode 1)
 
+  ;; 격리용 로컬 폴더가 없으면 자동으로 생성하는 안전장치
+  (dolist (dir (list (emacs/dir "backups/") 
+                     (emacs/dir "auto-save/") 
+                     (emacs/dir "tmp/")))
+    (unless (file-directory-p dir)
+      (make-directory dir t)))
+  
   :bind
   (("C-x f"       . toggle-frame-fullscreen)
    ("C-x <left>"  . hy/tile-frame-left)
@@ -230,11 +243,12 @@
 (use-package autorevert
   :ensure nil
   :custom
-  (auto-revert-interval 60)
-  (auto-revert-check-vc-info t)
-  (global-auto-revert-non-file-buffers t)
+  (auto-revert-interval 2)                  ; [최적화] 60초에서 2초로 단축하여 실시간 동기화 체감 향상
+  (auto-revert-check-vc-info nil)            ; 버전 관리 감지를 꺼서 성능 오버헤드 방지
+  (global-auto-revert-non-file-buffers t)    ; 파일이 아닌 버퍼(Agenda 등)도 함께 갱신
   :config
   (global-auto-revert-mode t)
+  ;; Mac 화면 포커스가 돌아왔을 때(창 전환 시) Dropbox 변경분을 즉시 강제 갱신하는 정교한 로직 유지
   (add-function :after after-focus-change-function
                 (lambda ()
                   (when (and (frame-focus-state)
@@ -259,8 +273,7 @@
 (use-package register
   :ensure nil
   :config
-  (let ((org-dir hy/org-person-dir)
-	(conf-dir user-emacs-directory))
+  (let ((conf-dir user-emacs-directory))
     (set-register ?i `(file . ,(emacs/dir "init.el")))
     (set-register ?l `(file . ,(emacs/dir "lisp/")))
     ;; (set-register ?r `(file . ,(concat org-dir "cReading.org")))
@@ -314,7 +327,7 @@
             (deactivate-input-method)
           (activate-input-method
            (or default-input-method
-               (concat "korean-hangul" default-korean-keyboard))))))))
+                (concat "korean-hangul" default-korean-keyboard))))))))
 
 
 ;; =======================================
@@ -334,7 +347,7 @@
   (set-face-attribute 'fixed-pitch nil :family "Menlo" :height 1.0)
   (set-face-attribute 'variable-pitch nil :family "Noto Sans CJK KR" :height 1.0)
   ;; (setq face-font-rescale-alist '(("D2Coding" . 1.0)
-                                  ;; ("Noto Sans CJK KR" . 0.95)))
+  ;;                                 ("Noto Sans CJK KR" . 0.95)))
   (add-hook 'org-mode-hook
             (lambda ()
               (variable-pitch-mode 1)
@@ -438,7 +451,7 @@
 ;; =======================================
 ;;; Eshell
 ;; =======================================
-   (use-package eshell
+(use-package eshell
   :defer t
   :custom
   (eshell-destroy-buffer-when-process-dies t))
@@ -525,3 +538,10 @@
   (("C-x r S" . hy/desktop-save-at-point)   ; Save Layout
    ("C-x r R" . hy/desktop-read-at-point))) ; Restore Layout
 
+
+;; =======================================
+;;; Emacs Server Start (For Emacs Client)
+;; =======================================
+;; (require 'server)
+;; (unless (server-running-p)
+;;   (server-start))
