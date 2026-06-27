@@ -217,6 +217,7 @@
    ("C-x <right>" . hy/tile-frame-right)
    ("C-x <down>"  . hy/tile-frame-center)
    ("C-x <up>"    . toggle-frame-maximized)
+   ("C-x 0"       . hy/simple-delete-window-dwim)
    ("C-z"         . hy/prefix-with-ime-deactivation)
    ("M-;"         . comment-line)
    ("M-s u"       . hy/search-unified)

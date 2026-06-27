@@ -8,7 +8,7 @@
 
 (defvar hy/f-health (expand-file-name "Health.org" hy/org-person-dir))
 (defvar hy/bp-start-date (encode-time 0 0 0 4 3 2026) "BP💊 start date.")
-(defvar hy/get-bp-stats nil)
+;; (defvar hy/get-bp-stats nil)
 
 ;;;###autoload
 (defun hy/bp-parse-table (&optional start-date end-date)

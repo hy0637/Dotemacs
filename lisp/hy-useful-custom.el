@@ -129,96 +129,96 @@ or the Completions buffer."
 ;;; Window
 ;; --------------
 
-;;;###autoload
-(defun hy/toggle-window-split-ratio ()
-  "Toggle the current window's width between 1/3 and 2/3 of the frame.
-Does not include 1/2 ratio; use `balance-windows' (C-x +) for equal splits.
-Preserves all buffer contents during the resize."
-  (interactive)
-  (let* ((total-width (frame-width))
-         (current-width (window-total-width))
-         ;; 현재 비율이 50%보다 작으면 2/3로, 크면 1/3로 목표 설정
-         (target-width (if (< (/ (float current-width) total-width) 0.5)
-                           (round (* total-width 0.66))
-                         (round (* total-width 0.33))))
-         (delta (- target-width current-width)))
-    (window-resize nil delta t)
-    (message "Window width toggled (1/3 <-> 2/3)")))
+;; ;;;###autoload
+;; (defun hy/toggle-window-split-ratio ()
+;;   "Toggle the current window's width between 1/3 and 2/3 of the frame.
+;; Does not include 1/2 ratio; use `balance-windows' (C-x +) for equal splits.
+;; Preserves all buffer contents during the resize."
+;;   (interactive)
+;;   (let* ((total-width (frame-width))
+;;          (current-width (window-total-width))
+;;          ;; 현재 비율이 50%보다 작으면 2/3로, 크면 1/3로 목표 설정
+;;          (target-width (if (< (/ (float current-width) total-width) 0.5)
+;;                            (round (* total-width 0.66))
+;;                          (round (* total-width 0.33))))
+;;          (delta (- target-width current-width)))
+;;     (window-resize nil delta t)
+;;     (message "Window width toggled (1/3 <-> 2/3)")))
 
 
-;;;###autoload
-(defun hy/toggle-window-height-ratio ()
-  "Toggle the current window's height between 1/3 and 2/3 of the frame.
-This function preserves all buffer contents and works regardless of 
-the number of open windows. It only adjusts the window's boundary."
-  (interactive)
-  (let* ((total-height (frame-height))
-         (one-third (round (* total-height 0.33)))
-         (two-thirds (round (* total-height 0.66)))
-         (current-height (window-total-height))
-         ;; 현재 높이가 1/3에 가까우면 2/3로, 아니면 1/3로 목표 설정
-         (target-height (if (< (abs (- current-height one-third)) 
-                              (abs (- current-height two-thirds)))
-                           two-thirds
-                         one-third))
-         (delta (- target-height current-height)))
-    ;; window-resize의 세 번째 인자가 nil이면 세로(높이) 조절입니다.
-    (window-resize nil delta nil)
-    (message "Window height toggled to approx %s" 
-             (if (= target-height one-third) "1/3" "2/3"))))
+;; ;;;###autoload
+;; (defun hy/toggle-window-height-ratio ()
+;;   "Toggle the current window's height between 1/3 and 2/3 of the frame.
+;; This function preserves all buffer contents and works regardless of 
+;; the number of open windows. It only adjusts the window's boundary."
+;;   (interactive)
+;;   (let* ((total-height (frame-height))
+;;          (one-third (round (* total-height 0.33)))
+;;          (two-thirds (round (* total-height 0.66)))
+;;          (current-height (window-total-height))
+;;          ;; 현재 높이가 1/3에 가까우면 2/3로, 아니면 1/3로 목표 설정
+;;          (target-height (if (< (abs (- current-height one-third)) 
+;;                               (abs (- current-height two-thirds)))
+;;                            two-thirds
+;;                          one-third))
+;;          (delta (- target-height current-height)))
+;;     ;; window-resize의 세 번째 인자가 nil이면 세로(높이) 조절입니다.
+;;     (window-resize nil delta nil)
+;;     (message "Window height toggled to approx %s" 
+;;              (if (= target-height one-third) "1/3" "2/3"))))
 
 
-;;;###autoload
-(defun hy/toggle-window-dedicated ()
-  "Toggle whether the current window is dedicated to its current buffer.
-A dedicated window will not be used by Emacs to display other buffers."
-  (interactive)
-  (set-window-dedicated-p (selected-window) (not (window-dedicated-p)))
-  (message "Window is %s dedicated" 
-           (if (window-dedicated-p) "NOW" "NO LONGER")))
+;; ;;;###autoload
+;; (defun hy/toggle-window-dedicated ()
+;;   "Toggle whether the current window is dedicated to its current buffer.
+;; A dedicated window will not be used by Emacs to display other buffers."
+;;   (interactive)
+;;   (set-window-dedicated-p (selected-window) (not (window-dedicated-p)))
+;;   (message "Window is %s dedicated" 
+;;            (if (window-dedicated-p) "NOW" "NO LONGER")))
 
 
-;;;###autoload
-(defun hy/layout-3-windows-center-focus ()
-  "Set a 25% | 50% | 25% layout for 3 windows, regardless of cursor position.
-Windows are sorted by their horizontal position on the frame."
-  (interactive)
-  (let ((windows (window-list)))
-    (if (= (length windows) 3)
-        ;; 창들을 왼쪽 좌표(edges) 기준으로 정렬
-        (let* ((sorted-windows (sort windows (lambda (w1 w2)
-                                               (< (car (window-edges w1))
-                                                  (car (window-edges w2))))))
-               (total-width (frame-width))
-               ;; (side-width (round (* total-width 0.25)))
-               ;; (center-width (- total-width (* side-width 2)))
-	       (side-width (round (* total-width 0.3)))
-               (center-width (- total-width (* side-width 2)))
-               (win-left (nth 0 sorted-windows))
-               (win-center (nth 1 sorted-windows))
-               (win-right (nth 2 sorted-windows)))
+;; ;;;###autoload
+;; (defun hy/layout-3-windows-center-focus ()
+;;   "Set a 25% | 50% | 25% layout for 3 windows, regardless of cursor position.
+;; Windows are sorted by their horizontal position on the frame."
+;;   (interactive)
+;;   (let ((windows (window-list)))
+;;     (if (= (length windows) 3)
+;;         ;; 창들을 왼쪽 좌표(edges) 기준으로 정렬
+;;         (let* ((sorted-windows (sort windows (lambda (w1 w2)
+;;                                                (< (car (window-edges w1))
+;;                                                   (car (window-edges w2))))))
+;;                (total-width (frame-width))
+;;                ;; (side-width (round (* total-width 0.25)))
+;;                ;; (center-width (- total-width (* side-width 2)))
+;; 	       (side-width (round (* total-width 0.3)))
+;;                (center-width (- total-width (* side-width 2)))
+;;                (win-left (nth 0 sorted-windows))
+;;                (win-center (nth 1 sorted-windows))
+;;                (win-right (nth 2 sorted-windows)))
           
-          ;; 1. 왼쪽 창 크기 고정
-          (window-resize win-left (- side-width (window-total-width win-left)) t)
-          ;; 2. 가운데 창 크기 조절 (나머지는 오른쪽 창이 됨)
-          (window-resize win-center (- center-width (window-total-width win-center)) t)
+;;           ;; 1. 왼쪽 창 크기 고정
+;;           (window-resize win-left (- side-width (window-total-width win-left)) t)
+;;           ;; 2. 가운데 창 크기 조절 (나머지는 오른쪽 창이 됨)
+;;           (window-resize win-center (- center-width (window-total-width win-center)) t)
           
-          (message "Layout fixed: 25%% | 50%% | 25%% (Sorted by position)"))
-      (message "Requires exactly 3 windows (current: %d)." (length windows)))))
+;;           (message "Layout fixed: 25%% | 50%% | 25%% (Sorted by position)"))
+;;       (message "Requires exactly 3 windows (current: %d)." (length windows)))))
 
 
-;;;###autoload
-(defun hy/split-window-three-column ()
-  "Split the current window into three columns with 25:50:25 ratio.
-If more than one window exists, it will first delete other windows."
-  (interactive)
-  (delete-other-windows)
-  ;; 1. 일단 3개로 분할
-  (split-window-right)
-  (split-window-right)
-  ;; 2. 이전에 만든 25:50:25 레이아웃 함수 호출
-  (hy/layout-3-windows-center-focus)
-  (message "Three-column layout initialized."))
+;; ;;;###autoload
+;; (defun hy/split-window-three-column ()
+;;   "Split the current window into three columns with 25:50:25 ratio.
+;; If more than one window exists, it will first delete other windows."
+;;   (interactive)
+;;   (delete-other-windows)
+;;   ;; 1. 일단 3개로 분할
+;;   (split-window-right)
+;;   (split-window-right)
+;;   ;; 2. 이전에 만든 25:50:25 레이아웃 함수 호출
+;;   (hy/layout-3-windows-center-focus)
+;;   (message "Three-column layout initialized."))
 
 
 (defun hy/get-display-workarea ()
@@ -313,6 +313,39 @@ and adjusts the left window to 20% and the right window to 80%."
 
 
 ;;;###autoload
+(defun hy/interactive-window-resize-all ()
+  "방향키(←/→/↑/↓)로 창의 너비와 높이 제한 없이 조절.
+임시로 최소 크기 제한을 해제하여 원하는 만큼 자유롭게 축소."
+  (interactive)
+  (message "창 크기 조절: [←/→] 너비 조절, [↑/↓] 높이 조절 (종료: 다른 키)")
+  (let ((window-min-width 1)
+        (window-min-height 1)
+        (window-size-fixed nil))
+    (set-transient-map
+     (let ((map (make-sparse-keymap)))
+       ;; 가로(너비) 조절
+       (define-key map (kbd "<left>")
+                   (lambda () (interactive)
+                     (let ((window-min-width 1)) (window-resize nil -3 t))
+                     (hy/interactive-window-resize-all)))
+       (define-key map (kbd "<right>")
+                   (lambda () (interactive)
+                     (let ((window-min-width 1)) (window-resize nil 3 t))
+                     (hy/interactive-window-resize-all)))
+       ;; 세로(높이) 조절
+       (define-key map (kbd "<up>")
+                   (lambda () (interactive)
+                     (let ((window-min-height 1)) (window-resize nil -3 nil))
+                     (hy/interactive-window-resize-all)))
+       (define-key map (kbd "<down>")
+                   (lambda () (interactive)
+                     (let ((window-min-height 1)) (window-resize nil 3 nil))
+                     (hy/interactive-window-resize-all)))
+       map))))
+(global-set-key (kbd "C-x {") #'hy/interactive-window-resize-all)
+
+
+;;;###autoload
 (defun hy/caffeine-on ()
   "Prevent macOS from sleeping for a selected duration.
 Prompts the user to choose between 30 minutes or 60 minutes.
@@ -331,7 +364,29 @@ Kills any running caffeinate process started by caffeine-on."
   (interactive)
   (shell-command "pkill caffeinate")
   (message "Caffeine OFF"))
-;; ================
+
+
+;;;###autoload
+(defun hy/simple-delete-window-dwim ()
+  ;;https://github.com/protesilaos
+  "Do What I Mean to delete the current THING.
+When there is more than one window, THING is a window.
+When there are more than one `tab-bar-mode' tabs, THING is a tab.
+Else THING is a frame if frames are more than one."
+  (declare (interactive-only t))
+  (interactive)
+  (cond
+   ((length> (window-list) 1)
+    (delete-window))
+   ((and (featurep 'tab-bar)
+         (length> (tab-bar-tabs) 1))
+    (tab-close))
+   ((length> (frame-list) 1)
+    (delete-frame))
+   (t
+    (user-error "Nothing to delete"))))
+
+;;; =============
 
 
 ;;;###autoload

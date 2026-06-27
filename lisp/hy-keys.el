@@ -76,12 +76,13 @@
 (hy/defkeymap hy-window-prefix-map "Window"
   ("c" "Caffeine on"         #'hy/caffeine-on)
   ("C" "Caffeine off"        #'hy/caffeine-off)
-  ("j" "Width 1/3-2/3"       #'hy/toggle-window-split-ratio)
-  ("i" "Height 1/3-2/3"      #'hy/toggle-window-height-ratio)
-  ("k" "Pin/Unpin"           #'hy/toggle-window-dedicated)
-  ("l" "3-Win Layout"        #'hy/layout-3-windows-center-focus)
-  ("m" "Split 3-Column"      #'hy/split-window-three-column)
-  ("n" "sidebar layout-20"   #'hy/toggle-sidebar-layout-20))
+  ;; ("j" "Width 1/3-2/3"       #'hy/toggle-window-split-ratio)
+  ;; ("i" "Height 1/3-2/3"      #'hy/toggle-window-height-ratio)
+  ;; ("k" "Pin/Unpin"           #'hy/toggle-window-dedicated)
+  ;; ("l" "3-Win Layout"        #'hy/layout-3-windows-center-focus)
+  ;; ("m" "Split 3-Column"      #'hy/split-window-three-column)
+  ("s" "Sidebar layout-20"   #'hy/toggle-sidebar-layout-20)
+  ("r" "window Resize"       #'hy/interactive-window-resize-all))
 
 (hy/defkeymap hy-emacs-prefix-map "Master"
   ("e" "Edit"                hy-edit-prefix-map)
@@ -92,6 +93,8 @@
   ("r" "Register"            #'jump-to-register)
   ("s" "Search"              hy-search-prefix-map)
   ("w" "Window"              hy-window-prefix-map))
+
+
 
 (provide 'hy-keys)
 ;;; hy-keys.el ends here
