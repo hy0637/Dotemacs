@@ -10,6 +10,7 @@
 ;; ======================================
 ;;; Core Functions
 ;; ======================================
+;;; ###autoload
 (defun hy/radio-stop ()
   "Stop the currently running radio (mpv) process."
   (interactive)

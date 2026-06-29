@@ -538,9 +538,16 @@
    ("C-x r R" . hy/desktop-read-at-point))) ; Restore Layout
 
 
+
 ;; =======================================
 ;;; Emacs Server Start (For Emacs Client)
 ;; =======================================
-;; (require 'server)
-;; (unless (server-running-p)
-;;   (server-start))
+(require 'server)
+
+(if (daemonp)
+    ;; 1. terminal에서 emacs --daemon으로 실행
+    (unless (server-running-p)
+      (server-start)
+      (message "🚀 Emacs daemon started successfully."))
+  ;; 2. 일반 GUI(앱 아이콘 클릭 등)로 실행
+  (message "ℹ️ Running in normal GUI mode (Server not started)."))
