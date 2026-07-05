@@ -1,5 +1,5 @@
 ;;; hy-org-custom.el --- Optimized Org-mode configuration -*- lexical-binding: t; -*-
-;;; 20260625
+;;; 20260703 수정본 (단축키 & Autoload 최적화)
 ;;; Commentary:
 ;; Personal Org-mode configuration with centralized file paths and health tracking.
 
@@ -9,12 +9,12 @@
 ;; ======================================
 ;;; 0. Load Path & Sub-modules Extension
 ;; ======================================
-(defvar hy/lisp-path)  ;; init.el에 정의된 전역 변수 재사용(컴파일 경고 방지)
+(defvar hy/lisp-path)
 
 (when (boundp 'hy/lisp-path)
   (add-to-list 'load-path hy/lisp-path))
 
-;; 해당 함수들이 호출될 때만 'hy-org-health 파일 읽기(로딩 지연)
+;; 외부 헬스 모듈 자동 로드 설정 (정상)
 (autoload 'hy/org-capture-finalize-bp "hy-org-health" "BP capture finalize hook." t)
 (autoload 'hy/bp-report "hy-org-health" "Show BP report." t)
 (autoload 'hy/show-bp-stats-by-tag "hy-org-health" "Show BP stats report." t)
@@ -25,20 +25,30 @@
 ;; ======================================
 ;;; 1. Variables & File Paths
 ;; ======================================
-(defvar hy/org-person-dir (dropbox/dir "Person/")
+(defun hy/get-dropbox-dir (subpath)
+  "Get absolute path inside Dropbox directory."
+  (if (fboundp 'dropbox/dir)
+      (dropbox/dir subpath)
+    (expand-file-name (concat "~/Dropbox/Docs/" subpath))))
+
+
+(defvar hy/org-person-dir (hy/get-dropbox-dir "Person/")
   "Directory for personal org files.")
 
-(defvar hy/f-daily  (expand-file-name "Daily.org"    hy/org-person-dir))
-(defvar hy/f-tasks  (expand-file-name "Tasks.org"    hy/org-person-dir))
-(defvar hy/f-health (expand-file-name "Health.org"   hy/org-person-dir))
-(defvar hy/f-read   (expand-file-name "cReading.org" hy/org-person-dir))
-(defvar hy/f-money  (expand-file-name "aMoney.org"   hy/org-person-dir))
+
+(defvar hy/f-daily   (expand-file-name "Daily.org"    hy/org-person-dir))
+(defvar hy/f-tasks   (expand-file-name "Tasks.org"    hy/org-person-dir))
+(defvar hy/f-health  (expand-file-name "Health.org"   hy/org-person-dir))
+(defvar hy/f-read    (expand-file-name "cReading.org" hy/org-person-dir))
+(defvar hy/f-money   (expand-file-name "aMoney.org"   hy/org-person-dir))
+
 
 (defvar hy/pngpaste-bin
   (or (executable-find "pngpaste") "/opt/homebrew/bin/pngpaste")
   "pngpaste executable path.")
 
-(defvar hy/bp-start-date (encode-time 0 0 0 4 3 2026) "BP💊 start date.")
+
+(defvar hy/bp-start-date (encode-time '(0 0 0 3 4 2026 nil -1 nil)) "BP💊 start date (2026-04-03).")
 
 
 ;; ======================================
@@ -48,7 +58,7 @@
   "Last image file inserted by hy/org-insert-image.")
 
 
-;;; ###autoload
+;;;###autoload
 (defun hy/org-insert-image (&optional manual)
   "Insert an image. If MANUAL, select manually ignoring history."
   (interactive "P")
@@ -92,27 +102,6 @@
   (hy/org-insert-image t))
 
 
-;;; ###autoload
-;; (defun hy/org-screenshot (chdir name)
-;;   "Insert a screenshot from clipboard. Requires: brew install pngpaste"
-;;   (interactive
-;;    (let* ((default-dir (file-name-concat org-directory "img/"))
-;;           (chosen-dir  (read-directory-name "Target directory: " default-dir default-dir t))
-;;           (default-name (format-time-string "%Y%m%d_%H%M%S"))
-;;           (file-name    (read-string (format "Enter filename (default %s, exclude extension): "
-;;                                              default-name) nil nil default-name)))
-;;      (list chosen-dir file-name)))
-;;   (let ((path (expand-file-name (concat name ".png") chdir)))
-;;     (make-directory chdir t)
-;;     (if (zerop (shell-command (format "%s %s" hy/pngpaste-bin (shell-quote-argument path))))
-;;         (progn
-;;           (insert (format "\n#+ATTR_LATEX: :width 0.5\\textwidth\n#+CAPTION: %s\n[[file:%s]]\n" name path))
-;;           (org-display-inline-images)
-;;           (message "Image saved: %s" path))
-;;       (error "No image in clipboard or pngpaste failed"))))
-
-
-;;; ###autoload
 (defun hy/org-insert-drawer-custom (&optional arg drawer)
   "Prompt and insert a drawer from an expanded list."
   (interactive "P")
@@ -136,28 +125,26 @@
       (if template (format template text) text))))
 
 
-;;; ###autoload
 (defun hy/org-insert-custom-prefix-to-blocks (beg end prefix)
   "선택 영역 내, 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix) 삽입."
-  (interactive "r\ns삽입할 문구를 입력하세요: ") ; r은 영역, s는 문자열 입력을 의미합니다.
+  (interactive "r\ns삽입할 문구를 입력하세요: ")
   (save-excursion
     (save-restriction
       (narrow-to-region beg end)
       (goto-char (point-min))
       (while (not (eobp))
-        ;; 현재 줄이 공백이 아니고, Org-mode 예약어(#+)로 시작하지 않을 때만 실행
         (when (and (not (looking-at "^\\s-*$"))
                    (not (looking-at "^[ \t]*#\\+")))
           (back-to-indentation)
           (insert prefix))
         (forward-line 1))))
-  (deactivate-mark)
-  (message "삽입 완료!" prefix))
+  ;; (deactivate-mark)
+  (when (use-region-p)
+    (setq deactivate-mark nil))
+  (message "동작 완료!" prefix))
 
 
-;;; ###autoload
 (defun hy/org-insert-link-dwim ()
-  ;; https://github.com/hrs/dotfiles/blob/main/emacs/.config/emacs/configuration.org
   "Like `org-insert-link' but with personal dwim preferences."
   (interactive)
   (let* ((point-in-link (org-in-regexp org-link-any-re 1))
@@ -195,21 +182,18 @@
            (call-interactively 'org-insert-link)))))
 
 
-;;; org-goto-next-paragraph-start START
-
 (defun hy/org--search-visible-line (backward)
-  "Search for the nearest visible non-blank line start.
-BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
+  "Search for the nearest visible non-blank line start."
   (let ((regexp "^[ \t]*\\([^ \t\n]\\)")
         found)
     (while (and (not found)
                 (if backward
                     (re-search-backward regexp nil t)
                   (re-search-forward regexp nil t)))
-      ;; 접힌(invisible) 영역 안의 매칭은 건너뜀
       (unless (invisible-p (match-beginning 1))
         (setq found t)))
     found))
+
 
 (defun hy/org--land ()
   "매칭 지점으로 이동 후 리스트/헤딩에 맞게 안착."
@@ -218,25 +202,20 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
    ((org-at-item-p) (goto-char (org-in-item-p)))
    ((org-at-heading-p) (beginning-of-line))))
 
-;;;###autoload
-(defun hy/org-goto-next-paragraph-start ()
-  "Move point to the next visible paragraph/item/heading."
-  (interactive)
-  (end-of-line)
-  (save-match-data
-    (when (hy/org--search-visible-line nil)
-      (hy/org--land))))
 
 ;;;###autoload
-(defun hy/org-goto-previous-paragraph-start ()
-  "Move point to the previous visible paragraph/item/heading."
-  (interactive)
-  (beginning-of-line)
-  (save-match-data
-    (when (hy/org--search-visible-line t)
-      (hy/org--land))))
-
-;;; org-goto-next-paragraph-start END
+(defun hy/org-goto-paragraph-start (&optional arg)
+  "Move point to the next (or previous with negative ARG) visible paragraph/item/heading."
+  (interactive "p")
+  (let ((backward (< (or arg 1) 0))
+        (steps (abs (or arg 1))))
+    (save-match-data
+      (dotimes (_ steps)
+        (if backward
+            (beginning-of-line)
+          (end-of-line))
+        (when (hy/org--search-visible-line backward)
+          (hy/org--land))))))
 
 
 ;;;###autoload
@@ -246,7 +225,6 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
   (setq org-hide-emphasis-markers (not org-hide-emphasis-markers))
   (font-lock-flush)
   (message "강조 기호 %s" (if org-hide-emphasis-markers "숨김" "표시")))
-
 
 ;; ======================================
 ;;; 3. Main Org Configuration
@@ -260,13 +238,13 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
          :map org-mode-map
          ("C-M-y"     . hy/paste-with-parentheses)
          ("C-M-'"     . hy/normalize-quotes)
-	 ("M-n"       . hy/org-goto-next-paragraph-start)
-         ("M-p"       . hy/org-goto-previous-paragraph-start)
-	 ("M-,"       . org-insert-structure-template)
-	 ("C-c C-l"   . hy/org-insert-link-dwim)
+         ("M-n"       . (lambda () (interactive) (hy/org-goto-paragraph-start 1)))
+         ("M-p"       . (lambda () (interactive) (hy/org-goto-paragraph-start -1)))
+         ("M-,"       . org-insert-structure-template)
+         ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
          ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
-	 ("C-c C-x C-f" . hy/pair-pairs-wrap))        ;alternative org-emphasize
+         ("C-c C-x C-f" . hy/pair-pairs-wrap))
   :custom
   (org-agenda-files                    (list hy/f-tasks hy/f-daily hy/f-health))
   (org-startup-indented                t)
@@ -298,7 +276,6 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
   (org-habit-following-days            1)
   (org-habit-show-habits-only-for-today t)
   :config
-  ;; (require 'org-tempo)
   (add-to-list 'org-modules 'org-habit)
   (add-hook 'org-capture-after-finalize-hook #'hy/org-capture-finalize-bp)
   
@@ -312,34 +289,27 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
           (insert "기록일: " (format-time-string "[%Y-%m-%d %a %H:%M]"))))))
   (add-hook 'org-capture-prepare-finalize-hook #'hy/org-capture-add-timestamp)
 
+  (defun hy/org-capture-bp-avg ()
+    "Safe helper to return formatted average blood pressure for capture template."
+    (let ((s (hy/get-bp-stats)))
+      (if s (format " (Avg:%d)" (truncate (car s))) "")))
+
   (setq org-capture-templates
-        `(("d" "Daily" entry (file+datetree ,hy/f-daily)
-	   "* %?") ;; :empty-lines-after
-
-          ("t" "Tasks" entry (file ,hy/f-tasks)
-	   "* TODO %?") ;; :empty-lines-after
-
+        `(("d" "Daily" entry (file+datetree ,hy/f-daily) "* %?")
+          ("t" "Tasks" entry (file ,hy/f-tasks) "* TODO %?")
           ("b" "Blood Pressure" table-line (file+headline ,hy/f-health "혈압 데이터")
-           ,(concat "| %U | %^{수축기} | %^{이완기} | %^{맥박} | %(hy/Bdays)"
+            ,(concat "| %U | %^{수축기} | %^{이완기} | %^{맥박} | %(hy/Bdays)"
                     "%^{상태|일반|기상직후|복용전|식후|운동후} "
-                    "%(let ((s (hy/get-bp-stats))) (if s (format \" (Avg:%d)\" (truncate (car s))) \"\")) "
+                    "%(hy/org-capture-bp-avg) "
                     "%^{메모} |")
-           :prepend t :immediate-finish t)
-
-	  ("f" "Finance" table-line
+            :prepend t :immediate-finish t)
+          ("f" "Finance" table-line
            (file ,(expand-file-name "Finance.org" hy/org-person-dir))
            "| %(format-time-string \"%Y-%m-%d\") | %^{항목} | %^{분류|식비|교통|주거|기타|경조사} | %^{수입|0} | %^{지출|0} | %^{비고} |"
            :prepend nil :immediate-finish t)
-
-          ;; ("h" "Habit: 혈압" entry (file+headline ,hy/f-health "습관 관리")
-          ;;  "* TODO 혈압 측정\nSCHEDULED: %t\n:PROPERTIES:\n:STYLE: habit\n:END:" :immediate-finish t)
-
-          ("r" "Reading" entry (file ,hy/f-read)
-	   "* %?" :unnarrowed t) ;; :empty-lines-after
-
+          ("r" "Reading" entry (file ,hy/f-read) "* %?" :unnarrowed t)
           ("m" "aMoney" table-line (file ,hy/f-money)
-           ,(format "| %%^{구분} | %%^{일자|%s} | %%^{이름} | %%^{연락처} | %%^{관계} | %%^{종류} | %%^{금액} | %%^{메모} |"
-                    (format-time-string "%Y-%m-%d"))
+           "| %^{구분} | %^{일자} | %^{이름} | %^{연락처} | %^{관계} | %^{종류} | %^{금액} | %^{메모} |"
            :prepend nil))))
 
 
@@ -390,10 +360,7 @@ BACKWARD non-nil이면 역방향. 성공 시 match data를 남기고 t 반환."
 
 (use-package valign
   :ensure t
-  ;; :custom
-  ;; (valign-fancy-bar t)           ;"May slow down with large tables"
   :hook (org-mode . valign-mode))
-
 
 
 (provide 'hy-org-custom)

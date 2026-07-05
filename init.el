@@ -128,14 +128,15 @@
 
 (require 'hy-completion)
 (require 'hy-dired-custom)
+(require 'hy-hangul)
 (require 'hy-org-custom)
 (require 'hy-useful-custom)
-(require 'hy-search)
+(require 'hy-pairs)
 (require 'hy-app)
-(require 'hy-hangul)
-(require 'hy-keys)
+(require 'hy-search)
 (require 'hy-todays-pop)
 (require 'hy-radio-direct)
+(require 'hy-keys)
 
 
 ;; =======================================
@@ -436,15 +437,30 @@
   (recentf-max-saved-items 15))
 
 
-;; ======================================
+;; =======================================
 ;;; which-key
-;; ======================================
+;; =======================================
 (use-package which-key
   :ensure nil
   :init (which-key-mode)
   :custom
   (which-key-show-transient-maps t)
   (which-key-idle-delay 0.2))
+  ;; ;; 한 화면에 최대한 많이 채우기 위한 레이어 설정
+  ;; (which-key-max-display-columns nil)         ; 가로 컬럼 제한 해제 (화면 넓게 쓰기)
+  ;; (which-key-side-window-max-height 0.4)      ; 팝업창 최대 높이를 화면의 40%까지 허용
+  ;; (which-key-sort-order 'which-key-key-order) ; 키 순서대로 정렬하여 가독성 확보
+  
+  ;; :config
+  ;; ;; font size 조정
+  ;; (let ((font-scale 0.85))
+  ;;   (custom-set-faces
+  ;;    `(which-key-key-face           ((t (:inherit font-lock-constant-face :height ,font-scale))))
+  ;;    `(which-key-separator-face     ((t (:inherit font-lock-comment-face  :height ,font-scale))))
+  ;;    `(which-key-description-face   ((t (:inherit font-lock-function-name-face :height ,font-scale))))
+  ;;    `(which-key-docstring-face     ((t (:inherit font-lock-comment-face  :height ,font-scale))))
+  ;;    `(which-key-group-description-face ((t (:inherit font-lock-keyword-face :height ,font-scale))))
+  ;;    `(which-key-local-map-description-face ((t (:inherit font-lock-type-face :height ,font-scale)))))))
 
 
 ;; =======================================
@@ -459,39 +475,25 @@
 ;; =======================================
 ;;; Modeline
 ;; =======================================
-(defvar hy/indicator-image-dir (emacs/dir "img-indicator/"))
-(defvar ko-img 
-  (create-image (expand-file-name "han2.tiff" hy/indicator-image-dir) 
-                'tiff nil :ascent 'center))
-(defvar en-img 
-  (create-image (expand-file-name "qwerty.tiff" hy/indicator-image-dir) 
-                'tiff nil :ascent 'center))
-(defvar mode-line-use-images-p 
-  (and (display-graphic-p) (image-type-available-p 'tiff)))
 (setq mode-line-right-align-edge 'right-margin)
+;; (setq-default mode-line-front-space nil)
 (setq-default mode-line-format
               '("%e "
                 mode-line-front-space
-		(:eval
-		 (let* (;; 1. 내장 입력기 상태 확인
-			(is-ko (and (boundp 'current-input-method) 
-				    (stringp current-input-method)
-				    (string-match-p "korean" current-input-method)))
-			(label (if is-ko "KO" "EN")))
-		   (propertize label
-			       'display (when mode-line-use-images-p 
-					  (if is-ko ko-img en-img))
-			       'help-echo label)))
-                "   "
-                "Ⓗ "
+                (:eval
+                 (let* ((is-ko (and (boundp 'current-input-method) 
+                                    (stringp current-input-method)
+                                    (string-match-p "korean" current-input-method))))
+                   (if is-ko
+                       " 🇰🇷 "
+		     " 🇺🇸 ")))
+                " Ⓗ "
                 mode-line-buffer-identification
                 mode-line-frame-identification
                 "  "
-                ;; mode-line-modes
                 mode-line-format-right-align
                 mode-line-position
                 " Ⓨ "
-		;; (:eval (format-time-string "%H:%M  "))
                 mode-line-misc-info))
 
 
@@ -538,16 +540,37 @@
    ("C-x r R" . hy/desktop-read-at-point))) ; Restore Layout
 
 
-
 ;; =======================================
 ;;; Emacs Server Start (For Emacs Client)
 ;; =======================================
-(require 'server)
+;; (require 'server)
 
-(if (daemonp)
-    ;; 1. terminal에서 emacs --daemon으로 실행
-    (unless (server-running-p)
-      (server-start)
-      (message "🚀 Emacs daemon started successfully."))
-  ;; 2. 일반 GUI(앱 아이콘 클릭 등)로 실행
-  (message "ℹ️ Running in normal GUI mode (Server not started)."))
+;; (if (daemonp)
+;;   ;; 1. terminal에서 emacs --daemon으로 실행
+;;     (unless (server-running-p)
+;;       (server-start)
+;;       (message "🚀 Emacs daemon started successfully."))
+;;   ;; 2. 일반 GUI(앱 아이콘 클릭 등)로 실행
+;;   (message "ℹ️ Running in normal GUI mode (Server not started)."))
+
+
+;; =======================================
+;;; Emacs Server Dynamic Controller
+;; =======================================
+;; (defun hy/server-start ()
+;;   "Emacs 서버를 동적으로 실행합니다. (평소 로딩 시간 제외용)"
+;;   (interactive)
+;;   (require 'server)
+;;   (if (server-running-p)
+;;       (message "ℹ️ Emacs 서버가 이미 실행 중입니다.")
+;;     (server-start)
+;;     (message "🚀 Emacs 서버가 성공적으로 시작되었습니다.")))
+
+;; (defun hy/server-stop ()
+;;   "실행 중인 Emacs 서버를 종료하고 기능을 제외합니다."
+;;   (interactive)
+;;   (if (and (fboundp 'server-running-p) (server-running-p))
+;;       (progn
+;;         (server-force-delete)
+;;         (message "🛑 Emacs 서버가 안전하게 종료되었습니다."))
+;;     (message "ℹ️ 현재 실행 중인 Emacs 서버가 없습니다.")))

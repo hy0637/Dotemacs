@@ -27,6 +27,7 @@
     ("Emacs Config"   . "~/Project/Dotemacs/")) ; 수정된 Emacs 설정 디렉토리 반영
   "List of local directories for ripgrep search.")
 
+
 ;; ======================================
 ;;; Helper Functions
 ;; ======================================
@@ -46,8 +47,10 @@
       (call-process "open" nil 0 nil url)
     (browse-url url)))
 
+
 (defun hy/fd-filename-search (query)
-  "Search file names using fd (NFD-safe on macOS)."
+  "Search file names using fd (NFD-safe on macOS) with Consult UI and Preview."
+  (interactive "s검색어: ")
   (let* ((path-choice (completing-read "Search in: "
                                        (mapcar #'car hy/search-path-targets)
                                        nil t))
@@ -56,16 +59,21 @@
          ;; Dropbox 환경 대응을 위해 검색어를 NFD로 완전 변환
          (query-nfd   (ucs-normalize-NFD-string query))
          ;; shell 호출 대신 process-lines로 안전하게 리스트 추출
-         (results     (process-lines "fd" "--color=never" query-nfd search-dir)))
+         (coding-system-for-read 'utf-8-hfs)
+         (results     (process-lines "fd" "--color=never" "--hidden" "--path-separator=/" query-nfd search-dir)))
     (if (null results)
         (message "결과 없음: '%s'" query)
-      (let ((selected (completing-read
-                       (format "파일 선택 [%s]: " query)
-                       results nil t)))
+      (let ((selected (consult--read
+                       results
+                       :prompt (format "파일 선택 [%s]: " query)
+                       :sort nil
+                       :category 'file
+                       :state (consult--file-state))))
         (when selected
           (if (string-match-p "\\.pdf\\'" selected)
               (call-process "open" nil 0 nil selected)
             (find-file selected)))))))
+
 
 (defun hy/rga-skim-search (&optional query)
   "Search PDF contents using `rga` and open in Skim."
@@ -101,6 +109,7 @@
                       (call-process "open" nil 0 nil full-path)))
                   (throw 'exit nil))
               (quit (message "파일 목록으로 복귀")))))))))
+
 
 ;; ======================================
 ;;; Main Function
@@ -148,6 +157,7 @@ Select between Web engines or Local paths for the given QUERY."
         (let ((default-directory (expand-file-name local-path)))
           ;; 첫 검색어가 미니버퍼에 실시간 매칭되도록 주입하는 최적 방식
           (consult-ripgrep default-directory search-term)))))))
+
 
 ;; ======================================
 ;;; Embark Integration

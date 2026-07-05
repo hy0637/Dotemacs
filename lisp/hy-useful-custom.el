@@ -129,98 +129,6 @@ or the Completions buffer."
 ;;; Window
 ;; --------------
 
-;; ;;;###autoload
-;; (defun hy/toggle-window-split-ratio ()
-;;   "Toggle the current window's width between 1/3 and 2/3 of the frame.
-;; Does not include 1/2 ratio; use `balance-windows' (C-x +) for equal splits.
-;; Preserves all buffer contents during the resize."
-;;   (interactive)
-;;   (let* ((total-width (frame-width))
-;;          (current-width (window-total-width))
-;;          ;; 현재 비율이 50%보다 작으면 2/3로, 크면 1/3로 목표 설정
-;;          (target-width (if (< (/ (float current-width) total-width) 0.5)
-;;                            (round (* total-width 0.66))
-;;                          (round (* total-width 0.33))))
-;;          (delta (- target-width current-width)))
-;;     (window-resize nil delta t)
-;;     (message "Window width toggled (1/3 <-> 2/3)")))
-
-
-;; ;;;###autoload
-;; (defun hy/toggle-window-height-ratio ()
-;;   "Toggle the current window's height between 1/3 and 2/3 of the frame.
-;; This function preserves all buffer contents and works regardless of 
-;; the number of open windows. It only adjusts the window's boundary."
-;;   (interactive)
-;;   (let* ((total-height (frame-height))
-;;          (one-third (round (* total-height 0.33)))
-;;          (two-thirds (round (* total-height 0.66)))
-;;          (current-height (window-total-height))
-;;          ;; 현재 높이가 1/3에 가까우면 2/3로, 아니면 1/3로 목표 설정
-;;          (target-height (if (< (abs (- current-height one-third)) 
-;;                               (abs (- current-height two-thirds)))
-;;                            two-thirds
-;;                          one-third))
-;;          (delta (- target-height current-height)))
-;;     ;; window-resize의 세 번째 인자가 nil이면 세로(높이) 조절입니다.
-;;     (window-resize nil delta nil)
-;;     (message "Window height toggled to approx %s" 
-;;              (if (= target-height one-third) "1/3" "2/3"))))
-
-
-;; ;;;###autoload
-;; (defun hy/toggle-window-dedicated ()
-;;   "Toggle whether the current window is dedicated to its current buffer.
-;; A dedicated window will not be used by Emacs to display other buffers."
-;;   (interactive)
-;;   (set-window-dedicated-p (selected-window) (not (window-dedicated-p)))
-;;   (message "Window is %s dedicated" 
-;;            (if (window-dedicated-p) "NOW" "NO LONGER")))
-
-
-;; ;;;###autoload
-;; (defun hy/layout-3-windows-center-focus ()
-;;   "Set a 25% | 50% | 25% layout for 3 windows, regardless of cursor position.
-;; Windows are sorted by their horizontal position on the frame."
-;;   (interactive)
-;;   (let ((windows (window-list)))
-;;     (if (= (length windows) 3)
-;;         ;; 창들을 왼쪽 좌표(edges) 기준으로 정렬
-;;         (let* ((sorted-windows (sort windows (lambda (w1 w2)
-;;                                                (< (car (window-edges w1))
-;;                                                   (car (window-edges w2))))))
-;;                (total-width (frame-width))
-;;                ;; (side-width (round (* total-width 0.25)))
-;;                ;; (center-width (- total-width (* side-width 2)))
-;; 	       (side-width (round (* total-width 0.3)))
-;;                (center-width (- total-width (* side-width 2)))
-;;                (win-left (nth 0 sorted-windows))
-;;                (win-center (nth 1 sorted-windows))
-;;                (win-right (nth 2 sorted-windows)))
-          
-;;           ;; 1. 왼쪽 창 크기 고정
-;;           (window-resize win-left (- side-width (window-total-width win-left)) t)
-;;           ;; 2. 가운데 창 크기 조절 (나머지는 오른쪽 창이 됨)
-;;           (window-resize win-center (- center-width (window-total-width win-center)) t)
-          
-;;           (message "Layout fixed: 25%% | 50%% | 25%% (Sorted by position)"))
-;;       (message "Requires exactly 3 windows (current: %d)." (length windows)))))
-
-
-;; ;;;###autoload
-;; (defun hy/split-window-three-column ()
-;;   "Split the current window into three columns with 25:50:25 ratio.
-;; If more than one window exists, it will first delete other windows."
-;;   (interactive)
-;;   (delete-other-windows)
-;;   ;; 1. 일단 3개로 분할
-;;   (split-window-right)
-;;   (split-window-right)
-;;   ;; 2. 이전에 만든 25:50:25 레이아웃 함수 호출
-;;   (hy/layout-3-windows-center-focus)
-;;   (message "Three-column layout initialized."))
-
-
 (defun hy/get-display-workarea ()
   "Returns the usable work area of the current monitor,
 excluding the Dock and Menu bar."
@@ -469,6 +377,8 @@ trailing spaces, doubled spaces, and excess blank lines."
       (while (re-search-forward "\n\\{3,\\}" end-marker t)
         (replace-match "\n\n") (setq count (1+ count))))
     (set-marker end-marker nil)
+    (when (use-region-p)
+      (setq deactivate-mark nil))
     (message "공백 %d곳 정돈" count)))
 
 
@@ -512,73 +422,10 @@ Automatically skips Org-mode src blocks to prevent code syntax errors."
                      (t                       "’")))
               (setq count (1+ count)))))))
     (set-marker end-marker nil)
+    ;; 원래 지정되어 있던 영역(Region)의 활성화 상태를 강제로 유지.
+    (when (use-region-p)
+      (setq deactivate-mark nil))
     (message "%s 따옴표 %d개 변환 완료" (if reverse "곧은" "둥근") count)))
-
-
-;;;###autoload
-(defun hy/manage-hanja-annotations (beg end)
-  "Manage Hanja annotations in region or whole buffer by choosing an action.
-[1] Wrap:  代書   -> (代書)  (괄호 감싸기)
-[2] Strip: (代書) -> 代書    (괄호만 벗기기)
-[3] Erase: (代書) -> \"\"      (한자 병기 통째로 삭제)"
-  (interactive
-   (if (use-region-p)
-       (list (region-beginning) (region-end))
-     (list (point-min) (point-max))))
-  
-  (let ((choice (read-char-from-minibuffer "선택 [1] 감싸기(Wrap)  [2] 괄호 벗기기(Strip)  [3] 통째로 삭제(Erase): ")))
-    (cond
-     ;; -------------------------------------------------------------
-     ;; [1번] 한자 -> (한자) 감싸기
-     ;; -------------------------------------------------------------
-     ((eq choice ?1)
-      (let ((count 0)
-            (end-marker (copy-marker end)))
-        (save-excursion
-          (goto-char beg)
-          (while (re-search-forward "[一-鿿]+" end-marker t)
-            (let ((match-beg (match-beginning 0))
-                  (match-end (match-end 0)))
-              (unless (and (eq (char-before match-beg) ?\()
-                           (eq (char-after match-end) ?\)))
-                (replace-match "(\\&)" t)
-                (setq count (1+ count))))))
-        (set-marker end-marker nil)
-        (message "한자 괄호 감싸기 %d곳 완료" count)))
-
-     ;; -------------------------------------------------------------
-     ;; [2번] (한자) -> 한자 (괄호만 삭제)
-     ;; -------------------------------------------------------------
-     ((eq choice ?2)
-      (let ((count 0)
-            (end-marker (copy-marker end)))
-        (save-excursion
-          (goto-char beg)
-          (while (re-search-forward "(\\([一-鿿]+\\))" end-marker t)
-            (replace-match "\\1" t)
-            (setq count (1+ count))))
-        (set-marker end-marker nil)
-        (message "한자 괄호 벗기기 %d곳 완료" count)))
-
-     ;; -------------------------------------------------------------
-     ;; [3번] (한자) -> "" (괄호와 한자 모두 삭제)
-     ;; -------------------------------------------------------------
-     ((eq choice ?3)
-      (let ((count 0)
-            (end-marker (copy-marker end)))
-        (save-excursion
-          (goto-char beg)
-          (while (re-search-forward "([一-鿿]+)" end-marker t)
-            (replace-match "")
-            (setq count (1+ count))))
-        (set-marker end-marker nil)
-        (message "한자 병기 %d곳 통째로 삭제 완료" count)))
-
-     ;; -------------------------------------------------------------
-     ;; 잘못된 입력 처리
-     ;; -------------------------------------------------------------
-     (t
-      (message "취소되었습니다.")))))
 
 
 

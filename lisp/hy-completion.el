@@ -14,6 +14,16 @@
   (vertico-count 15))
 
 
+(use-package vertico-directory
+  :ensure nil
+  :after vertico
+  :bind (:map vertico-map
+         ("RET"   . vertico-directory-enter)
+         ("DEL"   . vertico-directory-delete-char)
+         ("M-DEL" . vertico-directory-delete-word)
+         ("C-w"   . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
 ;; ======================================
 ;;; marginalia
 ;; ======================================
@@ -42,6 +52,7 @@
          ("C-x C-r" . consult-recent-file)
          ("C-c B" . consult-bookmark)
          ("M-y"   . consult-yank-pop)
+	 ("M-s f" . hy/fd-filename-search)
          ("M-s g" . consult-ripgrep)
          ("M-s l" . consult-line)
          ("M-s m" . consult-imenu)
@@ -66,9 +77,12 @@
 ;; =======================================
 (use-package embark
   :ensure t
-  :bind (("C-." . embark-act)         ;; 가장 기본적인 '행동'
-         ;; ("M-." . embark-dwim)        ;; 알아서 가장 적절한 '행동' 수행
-         ("C-h B" . embark-bindings)) ;; 현재 모드에서 가능한 모든 키 바인딩 확인
+  :bind (("C-." . embark-act)               ; 가장 기본적인 '행동'
+         ;; ("C-h B" . embark-bindings)        ; 현재 모드에서 가능한 모든 키 바인딩 확인
+	 :map help-map
+         ("b" . embark-bindings)            ; C-h b: 버퍼 전체 단축키를 Vertico로 검색
+         ("B" . embark-bindings-at-point)   ; C-h B: 현재 커서 위치의 단축키만 추출
+         ("M" . embark-bindings-in-keymap)) ; C-h M: 특정 키맵 내부 단축키만 조준 검색
   :init
   (setq prefix-help-command #'embark-prefix-help-command))         ;; 미니버퍼 내에서 도움말 가능하도록
 
@@ -78,234 +92,6 @@
   :after (embark consult)
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
-
-
-;; =======================================
-;;; pair-pair-wrap
-;; =======================================
-;; inspire https://protesilaos.com
-
-(defcustom hy/pair-pairs
-  '((?* :description "Bold"           :pair ?*)
-    (?/ :description "Italic"         :pair ?/)
-    (?= :description "Verbatim"       :pair ?=)
-    (?~ :description "Code"           :pair ?~)
-    (?+ :description "Strike"         :pair ?+)
-    (?_ :description "Under Line"     :pair ?_)
-    (?\" :description "“ ”"           :pair ("“" . "”"))
-    (?\' :description "‘’"            :pair ("‘" . "’"))
-    (?m  :description "Em-dash"       :pair ("— " . " —"))
-    (?-  :description "Hyphen-"       :pair ("- " . " -"))
-    (?\( :description " () "          :pair (?\( . ?\)))
-    (?\[ :description " [] "          :pair (?\[ . ?\]))
-    (?{  :description " {} "          :pair (?{ . ?}))
-    (?,  :description " <> "          :pair (?< . ?>))
-    (?<  :description " 「」 "         :pair ("「" . "」"))
-    (?>  :description " 『』 "         :pair ("『" . "』"))
-    (?M  :description " 《》 "         :pair ("《" . "》")))
-  "List of Org-mode emphasis markers and special bracket pairs."
-  :group 'editing
-  :type '(alist :key-type character :value-type (plist)))
-
-;; ---------------------------------------
-;; 내부 보조 함수
-;; ---------------------------------------
-
-(defun hy/region-or-buffer ()
-  "Return (BEG END) of the active region, or of the whole buffer."
-  (if (use-region-p)
-      (list (region-beginning) (region-end))
-    (list (point-min) (point-max))))
-
-(defun hy/pair--strings (char)
-  "Return the (OPEN . CLOSE) string pair registered for CHAR, or nil."
-  (let ((pd (plist-get (cdr (assoc char hy/pair-pairs)) :pair)))
-    (when pd
-      (if (consp pd)
-          (cons (if (characterp (car pd)) (char-to-string (car pd)) (car pd))
-                (if (characterp (cdr pd)) (char-to-string (cdr pd)) (cdr pd)))
-        (let ((s (char-to-string pd))) (cons s s))))))
-
-(defun hy/pair--unwrap-edges (rbeg rend)
-  "Remove a registered pair found at the edges of RBEG..REND.
-Return t if a pair was removed, nil otherwise."
-  (catch 'done
-    (dolist (e hy/pair-pairs)
-      (let ((p (hy/pair--strings (car e))))
-        (when p
-          (let ((ol (length (car p))) (cl (length (cdr p))))
-            (when (and (>= (- rend rbeg) (+ ol cl))
-                       (string= (car p)
-                                (buffer-substring-no-properties rbeg (+ rbeg ol)))
-                       (string= (cdr p)
-                                (buffer-substring-no-properties (- rend cl) rend)))
-              (save-excursion
-                (goto-char (- rend cl)) (delete-char cl)
-                (goto-char rbeg)        (delete-char ol))
-              (message "'%s%s' 제거 완료" (car p) (cdr p))
-              (throw 'done t))))))
-    nil))
-
-(defun hy/pair--unwrap-all (open close beg end &optional remove-content)
-  "Remove all OPEN...CLOSE pairs within BEG..END and return the count.
-Keep the enclosed content unless REMOVE-CONTENT is non-nil.
-Org emphasis markers follow boundary rules, and list bullets
-at the beginning of a line are protected."
-  (let* ((symmetric (and (= (length open) 1) (string= open close)))
-         (re (if symmetric
-                 (format (concat "\\(?:^\\|[ \t('\"{]\\)"
-                                 "\\(%s\\)"
-                                 "\\([^%s \n]\\(?:[^%s\n]*[^%s \n]\\)?\\)"
-                                 "\\(%s\\)"
-                                 "\\(?:[][ \t.,:!?;'\")}-]\\|$\\)")
-                         (regexp-quote open) open open open
-                         (regexp-quote close))
-               (concat (regexp-quote open) "\\(.*?\\)" (regexp-quote close))))
-         (count 0)
-         (end-marker (copy-marker end)))
-    (save-excursion
-      (goto-char beg)
-      (while (re-search-forward re end-marker t)
-        (cond
-         ;; '- ' 매칭이 줄머리(들여쓰기 포함) 불릿이면 건너뜀
-         ((and (not symmetric)
-               (string= open "- ")
-               (save-excursion
-                 (goto-char (match-beginning 0))
-                 (skip-chars-backward " \t")
-                 (bolp)))
-          (goto-char (1+ (match-beginning 0))))
-         (symmetric
-          (if remove-content
-              (delete-region (match-beginning 1) (match-end 3))   ; 통째 삭제
-            (delete-region (match-beginning 3) (match-end 3))     ; marker만
-            (delete-region (match-beginning 1) (match-end 1)))
-          (setq count (1+ count))
-          (goto-char (match-beginning 1)))
-         (t
-          (replace-match (if remove-content "" "\\1") t)
-          (setq count (1+ count))))))
-    (set-marker end-marker nil)
-    count))
-
-;; ---------------------------------------
-;; 사용자 명령
-;; ---------------------------------------
-
-(defun hy/pair-pairs-unwrap-dwim ()
-  "Remove symbol pairs, DWIM style. The region always defines the scope.
-If the region edges match a registered pair, remove just that pair.
-Otherwise, prompt for a symbol and remove all such pairs in the region.
-For the whole buffer, run after \\[mark-whole-buffer]."
-  (interactive)
-  (if (not (use-region-p))
-      (message "Region이 필요합니다")
-    (let ((rbeg (region-beginning))
-          (rend (region-end)))
-      (unless (hy/pair--unwrap-edges rbeg rend)
-        (let* ((char (read-char "범위에서 제거할 기호: "))
-               (pair (hy/pair--strings char)))
-          (if (not pair)
-              (message "Undefined symbol: %c" char)
-            (let ((n (hy/pair--unwrap-all (car pair) (cdr pair) rbeg rend)))
-              (message "'%s…%s' %d곳 제거" (car pair) (cdr pair) n))))))))
-
-(defun hy/strip-pair-with-content (beg end)
-  "Prompt for a registered pair and delete the pair together with
-its enclosed content, in region or whole buffer."
-  (interactive (hy/region-or-buffer))
-  (let* ((char (read-char "내용째 제거할 기호 (*, (, <, M...): "))
-         (pair (hy/pair--strings char)))
-    (if (not pair)
-        (message "Undefined symbol: %c" char)
-      (let ((n (hy/pair--unwrap-all (car pair) (cdr pair) beg end t)))
-        (message "'%s…%s' 내용 포함 %d곳 제거" (car pair) (cdr pair) n)))))
-
-(defun hy/pair-pairs-wrap (char &optional _target)
-  "Enclose the active region or the word at point with a pair of CHARs.
-Detects existing open/close delimiters in the region and replaces
-or inserts accordingly.  Press DEL to remove (unwrap) a pair instead."
-  (interactive "c기호 입력 (*, /, =, (, <... / DEL=제거): ")
-  (if (eq char ?\C-?)                  ; DEL(backspace) → 벗기기
-      (hy/pair-pairs-unwrap-dwim)
-    (let* ((entry (assoc char hy/pair-pairs))
-           (pair-data (plist-get (cdr entry) :pair))
-           (open      (if (consp pair-data) (car pair-data) pair-data))
-           (close     (if (consp pair-data) (cdr pair-data) pair-data))
-           (open-str  (if (characterp open)  (char-to-string open)  open))
-           (close-str (if (characterp close) (char-to-string close) close)))
-      (if (not pair-data)
-          (message "Undefined symbol: %c" char)
-        (if (not (use-region-p))
-            ;; region 없음: word at point 감싸기
-            (let* ((bounds (or (bounds-of-thing-at-point 'symbol)
-                               (cons (point) (point))))
-                   (start (car bounds))
-                   (end   (cdr bounds)))
-              (save-excursion
-                (goto-char end)   (insert close-str)
-                (goto-char start) (insert open-str)))
-          ;; region 있음
-          (let* ((rbeg (region-beginning))
-                 (rend (region-end))
-                 (all-pairs
-                  (apply #'append
-                         (mapcar (lambda (e)
-                                   (let* ((key (car e))
-                                          (pd  (plist-get (cdr e) :pair)))
-                                     (when (consp pd)
-                                       (let* ((os  (if (characterp (car pd))
-                                                       (char-to-string (car pd))
-                                                     (car pd)))
-                                              (cs  (if (characterp (cdr pd))
-                                                       (char-to-string (cdr pd))
-                                                     (cdr pd)))
-                                              (key-str (char-to-string key)))
-                                         (list (cons os       cs)
-                                               (cons key-str  cs)
-                                               (cons os       key-str)
-                                               (cons key-str  key-str))))))
-                                 hy/pair-pairs)))
-                 (existing-open
-                  (cl-some (lambda (p)
-                             (let ((os (car p)))
-                               (when (string= os (buffer-substring-no-properties
-                                                  rbeg
-                                                  (min (+ rbeg (length os)) rend)))
-                                 os)))
-                           all-pairs))
-                 (existing-close
-                  (cl-some (lambda (p)
-                             (let ((cs (cdr p)))
-                               (when (string= cs (buffer-substring-no-properties
-                                                  (max (- rend (length cs)) rbeg)
-                                                  rend))
-                                 cs)))
-                           all-pairs))
-                 (open-len  (length (or existing-open  "")))
-                 (close-len (length (or existing-close ""))))
-            (save-excursion
-              ;; 뒤쪽 먼저
-              (if existing-close
-                  (progn (goto-char (- rend close-len))
-                         (delete-char close-len)
-                         (insert close-str))
-                (goto-char rend)
-                (insert close-str))
-              ;; 앞쪽
-              (if existing-open
-                  (progn (goto-char rbeg)
-                         (delete-char open-len)
-                         (insert open-str))
-                (goto-char rbeg)
-                (insert open-str)))
-            (message "'%s' 완료" (plist-get (cdr entry) :description))))))))
-
-(with-eval-after-load 'embark
-  (dolist (map (list embark-symbol-map
-                     embark-region-map
-                     embark-general-map))
-    (define-key map (kbd "w") #'hy/pair-pairs-wrap)))
 
 
 ;; =======================================
