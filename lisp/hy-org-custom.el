@@ -244,7 +244,7 @@
          ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
          ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
-         ("C-c C-x C-f" . hy/pair-pairs-wrap))
+         ("C-c C-x C-f" . hy/pair-wrap))
   :custom
   (org-agenda-files                    (list hy/f-tasks hy/f-daily hy/f-health))
   (org-startup-indented                t)

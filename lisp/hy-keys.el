@@ -40,9 +40,10 @@
   ("%" "Replace"              #'query-replace))
 
 (hy/defkeymap hy-finishing-prefix-map "Finishing"
-  ("h" "manage Hanja"         #'hy/manage-hanja-annotations)
+  ;; ("h" "manage Hanja"         #'hy/manage-hanja-annotations)
   ("q" "normalize Quotes"     #'hy/normalize-quotes)
-  ("w" "Pairs (u)wrap"        #'hy/pair-pairs-wrap)
+  ;; ("w" "Pairs (u)wrap"        #'hy/pair-pairs-wrap)
+  ("w" "Pairs manage"         #'hy/pair-manage)
   ("W" "tidy-Witespace"       #'hy/tidy-whitespace))
 
 (hy/defkeymap hy-org-prefix-map "ORG"

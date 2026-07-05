@@ -446,21 +446,6 @@
   :custom
   (which-key-show-transient-maps t)
   (which-key-idle-delay 0.2))
-  ;; ;; 한 화면에 최대한 많이 채우기 위한 레이어 설정
-  ;; (which-key-max-display-columns nil)         ; 가로 컬럼 제한 해제 (화면 넓게 쓰기)
-  ;; (which-key-side-window-max-height 0.4)      ; 팝업창 최대 높이를 화면의 40%까지 허용
-  ;; (which-key-sort-order 'which-key-key-order) ; 키 순서대로 정렬하여 가독성 확보
-  
-  ;; :config
-  ;; ;; font size 조정
-  ;; (let ((font-scale 0.85))
-  ;;   (custom-set-faces
-  ;;    `(which-key-key-face           ((t (:inherit font-lock-constant-face :height ,font-scale))))
-  ;;    `(which-key-separator-face     ((t (:inherit font-lock-comment-face  :height ,font-scale))))
-  ;;    `(which-key-description-face   ((t (:inherit font-lock-function-name-face :height ,font-scale))))
-  ;;    `(which-key-docstring-face     ((t (:inherit font-lock-comment-face  :height ,font-scale))))
-  ;;    `(which-key-group-description-face ((t (:inherit font-lock-keyword-face :height ,font-scale))))
-  ;;    `(which-key-local-map-description-face ((t (:inherit font-lock-type-face :height ,font-scale)))))))
 
 
 ;; =======================================
