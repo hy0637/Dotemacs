@@ -178,7 +178,7 @@
                ("Doimg"   "#+ATTR_LATEX: :width 0.7\\textwidth \n")
                ("Doimgc"  "#+ATTR_LATEX: :width 0.7\\textwidth\n#+CAPTION: \n")
                ("Right"   "#+BEGIN_EXPORT latex\n\\begin{flushright}\n\n\\end{flushright}\n#+END_EXPORT")
-	       ("Wfig" "#+ATTR_LATEX: :float wrap :width 0.3\\textwidth :placement {r}{0.3\\textwidth}\n[[file:./img/PATH]]\n")
+	       ("Wfig"    "#+ATTR_LATEX: :float wrap :width 0.3\\textwidth :placement {r}{0.3\\textwidth}\n[[file:./img/PATH]]\n")
                ("Bskip"   "#+LATEX: \\bigskip")
                ;; ("Mskip"   "#+LATEX: \\medskip")
                ("Nskip"   "#+LATEX: \\vspace{\\baselineskip}")))

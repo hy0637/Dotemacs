@@ -125,23 +125,23 @@
       (if template (format template text) text))))
 
 
-(defun hy/org-insert-custom-prefix-to-blocks (beg end prefix)
-  "선택 영역 내, 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix) 삽입."
-  (interactive "r\ns삽입할 문구를 입력하세요: ")
-  (save-excursion
-    (save-restriction
-      (narrow-to-region beg end)
-      (goto-char (point-min))
-      (while (not (eobp))
-        (when (and (not (looking-at "^\\s-*$"))
-                   (not (looking-at "^[ \t]*#\\+")))
-          (back-to-indentation)
-          (insert prefix))
-        (forward-line 1))))
-  ;; (deactivate-mark)
-  (when (use-region-p)
-    (setq deactivate-mark nil))
-  (message "동작 완료!" prefix))
+;; (defun hy/org-insert-custom-prefix-to-blocks (beg end prefix)
+;;   "선택 영역 내, 빈 줄이 아닌 줄 시작점에 사용자가 입력한 문자열(prefix) 삽입."
+;;   (interactive "r\ns삽입할 문구를 입력하세요: ")
+;;   (save-excursion
+;;     (save-restriction
+;;       (narrow-to-region beg end)
+;;       (goto-char (point-min))
+;;       (while (not (eobp))
+;;         (when (and (not (looking-at "^\\s-*$"))
+;;                    (not (looking-at "^[ \t]*#\\+")))
+;;           (back-to-indentation)
+;;           (insert prefix))
+;;         (forward-line 1))))
+;;   ;; (deactivate-mark)
+;;   (when (use-region-p)
+;;     (setq deactivate-mark nil))
+;;   (message "동작 완료!" prefix))
 
 
 (defun hy/org-insert-link-dwim ()
@@ -226,6 +226,37 @@
   (font-lock-flush)
   (message "강조 기호 %s" (if org-hide-emphasis-markers "숨김" "표시")))
 
+
+(defun hy/org-mark-current-body-only ()
+  "현재 Org 헤딩의 제목 줄을 제외한 본문 내용만 (다음 헤딩 직전까지) 완벽하게 블록 선택합니다."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Org-mode에서만 사용할 수 있는 기능입니다."))
+  (let (beg end)
+    (save-excursion
+      ;; 1. 현재 헤딩의 시작점으로 이동 후 다음 줄을 시작점(beg)으로 지정
+      (org-back-to-heading t)
+      (forward-line 1)
+      (setq beg (point))
+      
+      ;; 2. 다음 헤딩 위치를 찾음 (없으면 파일 끝)
+      (if (outline-next-heading)
+          (setq end (point))
+        (setq end (point-max)))
+      
+      ;; 3. 다음 헤딩 바로 윗줄의 빈 줄이나 줄바꿈을 고려해 본문 끝 글자 위치로 보정
+      (goto-char end)
+      (when (bolp)
+        (backward-char 1))
+      (setq end (point)))
+    
+    ;; 4. 최종 영역 선택 활성화
+    (push-mark beg nil t)
+    (goto-char end)
+    (activate-mark)
+    (message "현재 헤딩의 본문 영역 전체가 선택되었습니다.")))
+
+
 ;; ======================================
 ;;; 3. Main Org Configuration
 ;; ======================================
@@ -243,8 +274,11 @@
          ("M-,"       . org-insert-structure-template)
          ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
-         ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
-         ("C-c C-x C-f" . hy/pair-wrap))
+         ;; ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
+         ("C-c C-x C-f" . hy/pair-wrap)
+	 ;; ("C-c C-x s"   . hy/swap-hangul-hanja-order)
+         ("C-c C-x m"   . hy/org-mark-current-body-only))
+  
   :custom
   (org-agenda-files                    (list hy/f-tasks hy/f-daily hy/f-health))
   (org-startup-indented                t)
@@ -276,6 +310,7 @@
   (org-habit-following-days            1)
   (org-habit-show-habits-only-for-today t)
   :config
+  (require 'hy-org-health nil  t)
   (add-to-list 'org-modules 'org-habit)
   (add-hook 'org-capture-after-finalize-hook #'hy/org-capture-finalize-bp)
   

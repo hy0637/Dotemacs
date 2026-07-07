@@ -243,6 +243,7 @@
       (when (> (length str) 0) (insert str))
       (setq hy/hangul--current nil))))
 
+
 (defun hy/hangul--backspace ()
   (if (null hy/hangul--current)
       (delete-char -1)
@@ -278,8 +279,8 @@
                  ((eq event ?\C-g)
                   (hy/hangul--clear) (setq hy/hangul--current nil)
                   (signal 'quit nil))
-                 ((eq event 127) (hy/hangul--backspace))
-                 ((or (eq event 'f9) (eq event 'Hangul_Hanja))
+		 ((or (eq event 127) (eq event 'backspace)) (hy/hangul--backspace))
+		 ((or (eq event 'f9) (eq event 'Hangul_Hanja))
                   (hy/hangul--flush) (hy/hangul-to-hanja-conversion))
                  ((and (integerp event) (hy/hangul--alpha-p event))
                   (if (or overriding-terminal-local-map overriding-local-map)

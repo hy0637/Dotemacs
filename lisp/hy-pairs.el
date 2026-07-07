@@ -201,7 +201,7 @@ OPEN-CLOSE-READER는 호출 시 (OPEN . CLOSE) 문자열 쌍을 반환하는 함
      (t (message "취소되었습니다.")))))
 
 ;; ---------------------------------------
-;; 통합 진입점 (embark 전용 메뉴: 일반/한자 + 1/2/3)
+;; 통합 진입점: 일반/한자 + 1/2/3)
 ;; ---------------------------------------
 (defun hy/pair-manage (beg end)
   "쌍 기호(일반) 또는 한자 병기를 감싸기/벗기기/내용째 삭제로 관리합니다.
@@ -241,5 +241,37 @@ OPEN-CLOSE-READER는 호출 시 (OPEN . CLOSE) 문자열 쌍을 반환하는 함
 ;;                      embark-general-map))
 ;;     (define-key map (kbd "w") #'hy/pair-manage)))
 
-;; end here
+
+;;; ###autoload
+(defun hy/swap-hangul-hanja-order (beg end &optional reverse)
+  "범위(또는 지정 없으면 버퍼 전체)에서 한글/한자 병기 순서를 바꿉니다.
+
+기본: '한글(한자)' -> '한자(한글)'
+\\[universal-argument] (C-u) 접두사: '한자(한글)' -> '한글(한자)' (역방향)
+
+각 방향은 서로 반대 패턴만 매치하므로, 반복 실행해도 안전합니다(idempotent)."
+  (interactive
+   (append
+    (if (use-region-p)
+        (list (region-beginning) (region-end))
+      (list (point-min) (point-max)))
+    (list current-prefix-arg)))
+  (let* ((pattern (if reverse
+                       "\\([一-鿿]+\\)(\\([가-힣]+\\))"   ;; 한자(한글) 찾기
+                     "\\([가-힣]+\\)(\\([一-鿿]+\\))"))   ;; 한글(한자) 찾기
+         (count 0)
+         (end-marker (copy-marker end)))
+    (save-excursion
+      (goto-char beg)
+      (while (re-search-forward pattern end-marker t)
+        (replace-match "\\2(\\1)" t)
+        (setq count (1+ count))))
+    (set-marker end-marker nil)
+    (message "%d곳 순서 변환 완료 (%s)"
+             count
+             (if reverse "한자(한글) → 한글(한자)" "한글(한자) → 한자(한글)"))))
+
+
+
 (provide 'hy-pairs)
+;;; hy-pairs.el ends here

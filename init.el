@@ -135,9 +135,9 @@
 (require 'hy-app)
 (require 'hy-search)
 (require 'hy-todays-pop)
-(require 'hy-radio-direct)
 (require 'hy-keys)
 
+(autoload 'hy/radio-play "hy-radio-direct" "라디오 실행 함수" t)
 
 ;; =======================================
 ;;; MacOS keyboard
@@ -145,7 +145,8 @@
 (when hy-macOS-p
   ;; [왼쪽] Opt(Super) / Cmd(Meta)
   (setq ns-option-modifier 'super)
-  (setq ns-command-modifier 'meta))
+  (setq ns-command-modifier 'meta)
+  (setq ns-right-option-modifier 'control))
 
 
 ;; =======================================
@@ -218,13 +219,13 @@
    ("C-x <right>" . hy/tile-frame-right)
    ("C-x <down>"  . hy/tile-frame-center)
    ("C-x <up>"    . toggle-frame-maximized)
+   ("C-x C-m"     . execute-extended-command)     ;M-x
    ("C-x 0"       . hy/simple-delete-window-dwim)
-   ("C-z"         . hy/prefix-with-ime-deactivation)
+   ("<escape>"    . hy/prefix-with-ime-deactivation)
    ("M-;"         . comment-line)
    ("M-s u"       . hy/search-unified)
    ("C-a"         . hy/smart-beginning-of-line)
-   ("C-g"         . hy/keyboard-quit-dwim)
-   ("<escape>"    . hy/keyboard-quit-dwim)))
+   ("C-g"         . hy/keyboard-quit-dwim)))
 
 
 (use-package time
@@ -410,12 +411,12 @@
 ;;; windmove
 ;; =======================================
 (use-package windmove
-  :ensure nil   ;built-in
+  :ensure nil     ;built-in
   :bind
-  (("C-x j" . windmove-left)
-   ("C-x l" . windmove-right)
-   ("C-x i" . windmove-up)
-   ("C-x m" . windmove-down)))
+  (("C-S-<left>"  . windmove-left)
+   ("C-S-<right>" . windmove-right)
+   ("C-S-<up>"    . windmove-up)
+   ("C-S-<down>"  . windmove-down)))
 
 
 ;; =======================================

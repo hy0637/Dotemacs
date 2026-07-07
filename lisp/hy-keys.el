@@ -47,12 +47,13 @@
   ("W" "tidy-Witespace"       #'hy/tidy-whitespace))
 
 (hy/defkeymap hy-org-prefix-map "ORG"
-  ("b" "insert-prefix-Block"  #'hy/org-insert-custom-prefix-to-blocks)
+  ;; ("b" "insert-prefix-Block"  #'hy/org-insert-custom-prefix-to-blocks)
   ("d" "insert-Drawer"        #'hy/org-insert-drawer-custom)
   ("e" "toggle-emphasis"      #'hy/org-toggle-emphasis-markers)
   ("i" "insert Img"           #'hy/org-insert-image)
   ("I" "insert Img manual"    #'hy/org-insert-image-manual)
-  ("l" "insert-Link-dwim"     #'hy/org-insert-link-dwim))
+  ("l" "insert-Link-dwim"     #'hy/org-insert-link-dwim)
+  ("m" "Mark-current-body"    #'hy/org-mark-current-body-only))
   
 (hy/defkeymap hy-search-prefix-map "Search"
   ("g" "Grep"                 #'consult-grep)
