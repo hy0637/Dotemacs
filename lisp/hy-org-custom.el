@@ -274,9 +274,7 @@
          ("M-,"       . org-insert-structure-template)
          ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
-         ;; ("C-c C-x i" . hy/org-insert-custom-prefix-to-blocks)
          ("C-c C-x C-f" . hy/pair-wrap)
-	 ;; ("C-c C-x s"   . hy/swap-hangul-hanja-order)
          ("C-c C-x m"   . hy/org-mark-current-body-only))
   
   :custom

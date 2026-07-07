@@ -131,6 +131,7 @@
 (require 'hy-hangul)
 (require 'hy-org-custom)
 (require 'hy-useful-custom)
+(require 'hy-win-useful)
 (require 'hy-pairs)
 (require 'hy-app)
 (require 'hy-search)
@@ -222,6 +223,7 @@
    ("C-x C-m"     . execute-extended-command)     ;M-x
    ("C-x 0"       . hy/simple-delete-window-dwim)
    ("<escape>"    . hy/prefix-with-ime-deactivation)
+   ("C-z"         . hy/repeat-last-command)
    ("M-;"         . comment-line)
    ("M-s u"       . hy/search-unified)
    ("C-a"         . hy/smart-beginning-of-line)
