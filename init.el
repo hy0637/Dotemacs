@@ -220,7 +220,7 @@
    ("C-x <right>" . hy/tile-frame-right)
    ("C-x <down>"  . hy/tile-frame-center)
    ("C-x <up>"    . toggle-frame-maximized)
-   ("C-x C-m"     . execute-extended-command)     ;M-x
+   ;; ("C-x C-m"     . execute-extended-command)     ;M-x
    ("C-x 0"       . hy/simple-delete-window-dwim)
    ("<escape>"    . hy/prefix-with-ime-deactivation)
    ("C-z"         . hy/repeat-last-command)
@@ -368,9 +368,9 @@
   :demand t
   :init
   (ef-themes-take-over-modus-themes-mode 1)
-  :bind
-  (("<f5>"   . modus-themes-rotate)
-   ("C-<f5>" . modus-themes-select))
+  ;; :bind
+  ;; (("<f5>"   . modus-themes-rotate)
+  ;;  ("C-<f5>" . modus-themes-select))
   :config
   (setq modus-themes-mixed-fonts t
         modus-themes-italic-constructs t)

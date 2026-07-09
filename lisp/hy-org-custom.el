@@ -303,7 +303,7 @@
   (org-agenda-window-setup             'current-window)
   (org-agenda-inhibit-startup          t)
   (org-agenda-use-tag-inheritance      nil)
-  (org-agenda-skip-function-global     '(org-agenda-skip-entry-if 'todo 'done))
+  (org-agenda-skip-function-global  (lambda () (org-agenda-skip-entry-if 'todo 'done)))
   (org-habit-preceding-days            7)
   (org-habit-following-days            1)
   (org-habit-show-habits-only-for-today t)

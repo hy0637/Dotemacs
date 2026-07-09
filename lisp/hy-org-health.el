@@ -97,8 +97,14 @@
               (unless (and last-repeat
                            (string-match today-str last-repeat))
                 (org-todo "DONE")
-                (save-buffer)))))))
-    (run-with-timer 0.5 nil #'hy/bp-report)))
+                (save-buffer)))))))))
+
+(defun hy/org-capture-report-bp-after-finalize ()
+  "Show BP report after capture finalize is completely done."
+  (when (equal (org-capture-get :key) "b")
+    (hy/bp-report)))
+
+(add-hook 'org-capture-after-finalize-hook #'hy/org-capture-report-bp-after-finalize)
 
 ;;;###autoload
 (defun hy/show-bp-stats-by-tag ()

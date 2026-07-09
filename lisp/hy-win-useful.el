@@ -1,5 +1,5 @@
 ;;; -*- lexical-binding: t; -*-
-;; .emacs.d/lisp/hy-win-useful-custom.el
+;; .emacs.d/lisp/hy-win-useful.el
 ;;
 ;;; ver 20260708
 ;;

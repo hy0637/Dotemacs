@@ -14,15 +14,15 @@
   (vertico-count 15))
 
 
-(use-package vertico-directory
-  :ensure nil
-  :after vertico
-  :bind (:map vertico-map
-         ("RET"   . vertico-directory-enter)
-         ("DEL"   . vertico-directory-delete-char)
-         ("M-DEL" . vertico-directory-delete-word)
-         ("C-w"   . vertico-directory-delete-word))
-  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+;; (use-package vertico-directory
+;;   :ensure nil
+;;   :after vertico
+;;   :bind (:map vertico-map
+;;          ("RET"   . vertico-directory-enter)
+;;          ("DEL"   . vertico-directory-delete-char)
+;;          ("M-DEL" . vertico-directory-delete-word)
+;;          ("C-w"   . vertico-directory-delete-word))
+;;   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 ;; ======================================
 ;;; marginalia
@@ -95,26 +95,51 @@
 
 
 ;; =======================================
-;;; Hunspell 설정
+;;; Hanspell
 ;; =======================================
-;; (defun hy-korean-spell-check ()
-;;   "Set hunspell as the default spell checker for Korean"
-;;   (interactive)
-;;   (require 'ispell) ;; 함수 실행 시 패키지 로드
-;;   (setq ispell-local-dictionary "ko_KR")
-;;   (flyspell-mode 1)
-;;   (message "Korean spell check enable"))
-
-;; (use-package ispell
-;;   :if hy-macOS-p
-;;   :defer t
-;;   :config
-;;   (setq ispell-program-name "hunspell")
-;;   (setq ispell-local-dictionary-alist
-;;         '(("ko_KR" "[가-힣]" "[^가-힣]" "[-']" nil ("-d" "ko_KR") nil utf-8)))
-;;   (setq flyspell-delay 0.5)
-;;   (setq flyspell-issue-message-flag nil)
-;;   (setq flyspell-use-meta-tab nil))
+(defun hy/org-korean-spellcheck-region (beg end)
+  "선택한 영역의 맞춤법 교정 리포트를 별도 버퍼에 띄워 검토합니다.
+교정할 내용이 없으면 메시지만 표시하고 종료합니다."
+  ;; brew install node
+  ;; npm install -g hanspell
+  (interactive "r")
+  (let* ((hanspell-path "/opt/homebrew/bin/hanspell-cli")
+         (cmd (if (executable-find "hanspell-cli") "hanspell-cli" hanspell-path))
+         (buf-name "*Korean Spell Check*")
+         (text (buffer-substring-no-properties beg end))
+         raw-output)
+    (if (not (file-executable-p hanspell-path))
+        (user-error "터미널에서 'npm install -g hanspell'이 정상 설치되지 않았습니다.")
+      
+      ;; 1. hanspell 결과 가져오기
+      (setq raw-output (shell-command-to-string 
+                        (format "echo %s | %s -n" (shell-quote-argument text) cmd)))
+      
+      ;; [핵심 추가] 결과물에 교정 기호(->)가 없거나 비어있다면 오타가 없는 것임
+      (if (or (string-empty-p (string-trim raw-output))
+              (not (string-match-p "->" raw-output)))
+          (message "✨ 맞춤법이 완벽합니다! 교정할 내용이 없습니다.")
+        
+        ;; 2. 오타가 있을 때만 가독성 개선 및 팝업창 생성
+        (setq raw-output (replace-regexp-in-string "오류입니다\\." "오류입니다. 🚨\n" raw-output))
+        (setq raw-output (replace-regexp-in-string "추천입니다\\." "추천입니다. 💡\n" raw-output))
+        
+        (with-current-buffer (get-buffer-create buf-name)
+          (read-only-mode -1)
+          (erase-buffer)
+          (org-mode)
+          (insert raw-output)
+          (goto-char (point-min))
+          (read-only-mode 1)
+          
+          (local-set-key (kbd "q") (lambda () 
+                                     (interactive)
+                                     (let ((win (get-buffer-window (current-buffer))))
+                                       (when win (delete-window win))
+                                       (kill-buffer (current-buffer))))))
+        
+        (display-buffer buf-name)
+        (message "맞춤법 검사 완료! 검토 후 'q'를 눌러 닫으세요.")))))
 
 
 ;; =======================================
