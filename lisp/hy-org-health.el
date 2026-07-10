@@ -106,6 +106,14 @@
 
 (add-hook 'org-capture-after-finalize-hook #'hy/org-capture-report-bp-after-finalize)
 
+
+;;;###autoload
+(defun hy/org-capture-bp-avg ()
+  "Safe helper to return formatted average blood pressure for capture template."
+  (let ((s (hy/get-bp-stats)))
+    (if s (format " (Avg:%d)" (truncate (car s))) "")))
+
+
 ;;;###autoload
 (defun hy/show-bp-stats-by-tag ()
   "Generate BP report aggregated by Time/Status patterns."
@@ -157,6 +165,7 @@
         (special-mode)
         (goto-char (point-min)))
       (pop-to-buffer (current-buffer)))))
+
 
 (provide 'hy-org-health)
 ;;; hy-org-health.el ends here

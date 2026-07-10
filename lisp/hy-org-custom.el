@@ -102,6 +102,7 @@
   (hy/org-insert-image t))
 
 
+;;;###autoload
 (defun hy/org-insert-drawer-custom (&optional arg drawer)
   "Prompt and insert a drawer from an expanded list."
   (interactive "P")
@@ -227,8 +228,9 @@
   (message "강조 기호 %s" (if org-hide-emphasis-markers "숨김" "표시")))
 
 
+;;;###autoload
 (defun hy/org-mark-current-body-only ()
-  "현재 Org 헤딩의 제목 줄을 제외한 본문 내용만 (다음 헤딩 직전까지) 완벽하게 블록 선택합니다."
+  "현재 Org 헤딩의 제목 줄을 제외한 본문 내용만 (다음 헤딩 직전까지) 블록 선택."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Org-mode에서만 사용할 수 있는 기능입니다."))
@@ -257,13 +259,35 @@
     (message "현재 헤딩의 본문 영역 전체가 선택되었습니다.")))
 
 
+(defun hy/org-modernize-stars ()
+  "Org-mode의 무뚝뚝한 별(*) 기호를 테마 색상과 연동된 고풍스러운 불릿으로 교체.
+외부 패키지 없이 내장 font-lock 정규식 매칭을 사용하여 가볍게 작동."
+  (font-lock-add-keywords 
+   nil
+   '(("^\\(\\(\\*\\)+\\)\\( \\)"
+      (0 (progn
+           (let* ((level (- (match-end 1) (match-beginning 1)))
+                  (bullets '("◉" "○" "●" "○" "▶" "▷" "►"))
+                  (bullet (nth (% (1- level) (length bullets)) bullets))
+                  ;; 해당 레벨에 맞는 Emacs 순정 헤딩 face 명칭을 동적으로 생성 (org-level-1, org-level-2 등)
+                  (face-name (intern (format "org-level-%d" level))))
+             
+             ;; 1. 글자 모양을 불릿으로 교체
+             (put-text-property (match-beginning 1) (match-end 1) 'display bullet)
+             ;; 2. 색상(Face)을 테마의 헤딩 색상과 강제로 일치시켜 가시성 확보
+             (put-text-property (match-beginning 1) (match-end 1) 'face face-name))
+           nil))))))
+
+
 ;; ======================================
 ;;; 3. Main Org Configuration
 ;; ======================================
 (use-package org
   :ensure nil
   :mode ("\\.org\\'" . org-mode)
-  :hook (org-mode . (lambda () (text-scale-increase 1)))
+  :hook (org-mode . (lambda ()
+		      (text-scale-increase 1)
+		      (hy/org-modernize-stars)))
   :bind (("C-c a" . org-agenda)
          ("C-c c" . org-capture)
          :map org-mode-map
@@ -297,6 +321,8 @@
   (org-export-with-sub-superscripts    '{})
   (org-fontify-done-headline           t)
   (org-fontify-quote-and-verse-blocks  t)
+  (org-fontify-whole-heading-line      t)
+  (org-table-shading-column            nil)
   (org-agenda-format-date              "%Y-%m-%d (%a)")
   (org-agenda-current-time-string      "← now ─────────")
   (org-agenda-restore-windows-after-quit t)
@@ -311,7 +337,7 @@
   (require 'hy-org-health nil  t)
   (add-to-list 'org-modules 'org-habit)
   (add-hook 'org-capture-after-finalize-hook #'hy/org-capture-finalize-bp)
-  
+    
   (defun hy/org-capture-add-timestamp ()
     "Automatically appends the recording date when saving Daily, Tasks, or Reading items."
     (let ((key (plist-get org-capture-plist :key)))
@@ -321,11 +347,6 @@
           (unless (bolp) (insert "\n"))
           (insert "기록일: " (format-time-string "[%Y-%m-%d %a %H:%M]"))))))
   (add-hook 'org-capture-prepare-finalize-hook #'hy/org-capture-add-timestamp)
-
-  (defun hy/org-capture-bp-avg ()
-    "Safe helper to return formatted average blood pressure for capture template."
-    (let ((s (hy/get-bp-stats)))
-      (if s (format " (Avg:%d)" (truncate (car s))) "")))
 
   (setq org-capture-templates
         `(("d" "Daily" entry (file+datetree ,hy/f-daily) "* %?")
@@ -349,12 +370,6 @@
 ;; ======================================
 ;;; 4. External Packages
 ;; ======================================
-(use-package org-superstar
-  :ensure t
-  :hook (org-mode . org-superstar-mode)
-  :config (setq org-superstar-headline-bullets-list '("◉" "○" "●" "○" "▶" "▷" "►")))
-
-
 (use-package org-appear
   :ensure t
   :hook (org-mode . org-appear-mode)
@@ -389,11 +404,6 @@
   (calendar-month-name-array
    ["1월" "2월" "3월" "4월" "5월" "6월"
     "7월" "8월" "9월" "10월" "11월" "12월"]))
-
-
-(use-package valign
-  :ensure t
-  :hook (org-mode . valign-mode))
 
 
 (provide 'hy-org-custom)

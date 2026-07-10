@@ -159,7 +159,6 @@
         temporary-file-directory (emacs/dir "tmp/"))
 
   :hook ((text-mode     . visual-line-mode))
-         ;; (focus-in-hook . hy/deactivate-input-method))
   
   :custom
   ;; Dropbox sync 충돌 방지 (경로 로컬 격리)
