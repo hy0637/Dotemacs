@@ -16,10 +16,10 @@
 
 ;; 외부 헬스 모듈 자동 로드 설정 (정상)
 (autoload 'hy/org-capture-finalize-bp "hy-org-health" "BP capture finalize hook." t)
-(autoload 'hy/bp-report "hy-org-health" "Show BP report." t)
 (autoload 'hy/show-bp-stats-by-tag "hy-org-health" "Show BP stats report." t)
-(autoload 'hy/Bdays "hy-org-health" "BP days tag." nil)
 (autoload 'hy/get-bp-stats "hy-org-health" "Get BP stats." nil)
+(autoload 'hy/bp-report "hy-org-health" "Show BP report." t)
+(autoload 'hy/Bdays "hy-org-health" "BP days tag." nil)
 
 
 ;; ======================================

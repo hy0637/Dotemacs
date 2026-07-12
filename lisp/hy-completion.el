@@ -185,8 +185,8 @@
     (dolist (pair
              '(("lS"  "―") ("lT"  "……")
                ("lG"  "「") ("rG"  "」")
-               ("llG" "『") ("rrG" "』")
-               ("cD"  "·")))
+               ("llG" "『") ("rrG" "』")))
+               
       (define-abbrev org-mode-abbrev-table
         (car pair) (cadr pair)))
     ;; Org 템플릿 세트
@@ -237,7 +237,7 @@
                  (not (org-in-verbatim-emphasis)))
         (let ((pairs '(("->"  . "→") ("<-"  . "←") ("+="  . "·")
                        ("=>"  . "⇒") ("<="  . "⇐")
-                       ("<_"  . "≤") (">_"  . "≥")
+                       ("^-"  . "↑") ("-^"  . "↓")
                        ("<<"  . "《") (">>"  . "》")
                        ("~="  . "≈") ("+-"  . "±"))))
           (catch 'done

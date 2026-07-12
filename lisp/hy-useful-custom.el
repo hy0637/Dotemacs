@@ -113,6 +113,23 @@ or the Completions buffer."
 
 
 ;;;###autoload
+(defun hy/kill-other-buffers ()
+  "현재 버퍼와 *scratch* 버퍼를 제외한 모든 버퍼 삭제."
+  (interactive)
+  (let ((current (current-buffer))
+        (scratch (get-buffer "*scratch*"))
+        (killed-count 0))
+    (dolist (buf (buffer-list))
+      ;; 현재 버퍼도 아니고, 스크래치 버퍼도 아니고, 버퍼 이름이 비어있지 않은 경우만 대상
+      (unless (or (eq buf current)
+                  (eq buf scratch)
+                  (string-prefix-p " " (buffer-name buf))) ; 미니버퍼 등 내부 버퍼 제외
+        (kill-buffer buf)
+        (setq killed-count (1+ killed-count))))
+    (message "🧹 %d개의 버퍼를 정리. (현재 버퍼와 *scratch*만 유지)" killed-count)))
+
+
+;;;###autoload
 (defun hy/buffer-to-pdf-pandoc ()
   "Convert the current buffer to PDF using Pandoc.
 Code files (.el, .py, .sh, etc.) are wrapped in a Markdown code block

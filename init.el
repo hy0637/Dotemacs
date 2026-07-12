@@ -214,20 +214,18 @@
       (make-directory dir t)))
   
   :bind
-  (("C-x f"       . toggle-frame-fullscreen)
-   ("C-x <left>"  . hy/tile-frame-left)
-   ("C-x <right>" . hy/tile-frame-right)
-   ("C-x <down>"  . hy/tile-frame-center)
-   ("C-x <up>"    . toggle-frame-maximized)
-   ;; ("C-x C-m"     . execute-extended-command)     ;M-x
+  (("C-x <up>"    . toggle-frame-fullscreen)      ; 위: 전체 화면 토글
+   ("C-x <left>"  . hy/tile-frame-left)           ; 좌: 왼쪽 배치
+   ("C-x <right>" . hy/tile-frame-right)          ; 우: 오른쪽 배치
+   ("C-x <down>"  . hy/tile-frame-center)         ; 아래: 중앙 배치
    ("C-x 0"       . hy/simple-delete-window-dwim)
-   ("<escape>"    . hy/prefix-with-ime-deactivation)
    ("C-z"         . hy/repeat-last-command)
+   ("M-o"         . hy/prefix-with-ime-deactivation) ; M-o로 마스터 키맵 단일 호출
    ("M-;"         . comment-line)
    ("M-s u"       . hy/search-unified)
    ("C-a"         . hy/smart-beginning-of-line)
    ("C-g"         . hy/keyboard-quit-dwim)))
-
+  
 
 (use-package time
   :ensure nil
@@ -414,10 +412,10 @@
 (use-package windmove
   :ensure nil     ;built-in
   :bind
-  (("C-S-<left>"  . windmove-left)
-   ("C-S-<right>" . windmove-right)
-   ("C-S-<up>"    . windmove-up)
-   ("C-S-<down>"  . windmove-down)))
+  (("C-x j" . windmove-left)
+   ("C-x l" . windmove-right)
+   ("C-x i" . windmove-up)
+   ("C-x m" . windmove-down)))
 
 
 ;; =======================================

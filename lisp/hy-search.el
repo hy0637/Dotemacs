@@ -48,8 +48,10 @@
     (browse-url url)))
 
 
+
 (defun hy/fd-filename-search (query)
-  "Search file names using fd (NFD-safe on macOS) with Consult UI and Preview."
+  "Search file names using fd (NFD-safe on macOS) with Consult UI and Preview.
+PDF files are excluded from Emacs buffer preview and open only in macOS Preview app."
   (interactive "s검색어: ")
   (let* ((path-choice (completing-read "Search in: "
                                        (mapcar #'car hy/search-path-targets)
@@ -63,14 +65,20 @@
          (results     (process-lines "fd" "--color=never" "--hidden" "--path-separator=/" query-nfd search-dir)))
     (if (null results)
         (message "결과 없음: '%s'" query)
-      (let ((selected (consult--read
-                       results
-                       :prompt (format "파일 선택 [%s]: " query)
-                       :sort nil
-                       :category 'file
-                       :state (consult--file-state))))
+      (let* ((orig-state (consult--file-state))
+             ;; PDF 파일 위에 커서가 올라갔을 때는 Emacs 내부 미리보기를 원천 차단하는 커스텀 스테이트 정의
+             (custom-state (lambda (action candidate)
+                             (unless (and candidate (string-match-p "\\.pdf\\'" candidate))
+                               (funcall orig-state action candidate))))
+             (selected (consult--read
+                        results
+                        :prompt (format "파일 선택 [%s]: " query)
+                        :sort nil
+                        :category 'file
+                        :state custom-state))) ;; 커스텀 스테이트 적용
         (when selected
           (if (string-match-p "\\.pdf\\'" selected)
+              ;; 엔터를 치면 오직 mac 시스템 open 명령어로만 실행 (macOS 미리보기)
               (call-process "open" nil 0 nil selected)
             (find-file selected)))))))
 
