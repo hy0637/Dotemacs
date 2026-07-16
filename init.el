@@ -201,6 +201,7 @@
   (kill-whole-line 1)
   (next-line-add-newlines nil)
   (enable-recursive-minibuffers t)
+  ;; (context-menu-mode 1)
 
   :config
   (global-font-lock-mode 1)
@@ -219,8 +220,8 @@
    ("C-x <right>" . hy/tile-frame-right)          ; 우: 오른쪽 배치
    ("C-x <down>"  . hy/tile-frame-center)         ; 아래: 중앙 배치
    ("C-x 0"       . hy/simple-delete-window-dwim)
-   ("C-z"         . hy/repeat-last-command)
-   ("M-o"         . hy/prefix-with-ime-deactivation) ; M-o로 마스터 키맵 단일 호출
+   ("C-z"         . hy/repeat-last-mx-command)
+   ;; ("M-o"         . hy/prefix-with-ime-deactivation) ; M-o로 마스터 키맵 단일 호출
    ("M-;"         . comment-line)
    ("M-s u"       . hy/search-unified)
    ("C-a"         . hy/smart-beginning-of-line)
@@ -409,13 +410,13 @@
 ;; =======================================
 ;;; windmove
 ;; =======================================
-(use-package windmove
-  :ensure nil     ;built-in
-  :bind
-  (("C-x j" . windmove-left)
-   ("C-x l" . windmove-right)
-   ("C-x i" . windmove-up)
-   ("C-x m" . windmove-down)))
+ (use-package windmove)
+  ;; :ensure nil
+  ;; :bind
+  ;; (("S-M-<left>"  . windmove-left)
+  ;;  ("S-M-<right>" . windmove-right)
+  ;;  ("S-M-<up>"    . windmove-up)
+  ;;  ("S-M-<down>"  . windmove-down)))
 
 
 ;; =======================================
@@ -559,3 +560,4 @@
 ;;         (server-force-delete)
 ;;         (message "🛑 Emacs 서버가 안전하게 종료되었습니다."))
 ;;     (message "ℹ️ 현재 실행 중인 Emacs 서버가 없습니다.")))
+

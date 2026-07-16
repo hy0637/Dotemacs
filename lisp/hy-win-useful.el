@@ -98,35 +98,45 @@ and adjusts the left window to 20% and the right window to 80%."
 
 ;;;###autoload
 (defun hy/interactive-window-resize-all ()
-  "방향키(←/→/↑/↓)로 창의 너비와 높이 제한 없이 조절.
+  "방향키(←/→/↑/↓) 또는 문자키로 창의 너비와 높이를 제한 없이 조절.
 임시로 최소 크기 제한을 해제하여 원하는 만큼 자유롭게 축소."
   (interactive)
-  (message "창 크기 조절: [←/→] 너비 조절, [↑/↓] 높이 조절 (종료: 다른 키)")
+  (message "창 크기 조절: [←/h] 축소, [→/l] 확대 | [↑/i] 축소, [↓/m] 확대 (종료: 다른 키)")
   (let ((window-min-width 1)
         (window-min-height 1)
         (window-size-fixed nil))
     (set-transient-map
      (let ((map (make-sparse-keymap)))
-       ;; 가로(너비) 조절
-       (define-key map (kbd "<left>")
-                   (lambda () (interactive)
-                     (let ((window-min-width 1)) (window-resize nil -3 t))
-                     (hy/interactive-window-resize-all)))
-       (define-key map (kbd "<right>")
-                   (lambda () (interactive)
-                     (let ((window-min-width 1)) (window-resize nil 3 t))
-                     (hy/interactive-window-resize-all)))
-       ;; 세로(높이) 조절
-       (define-key map (kbd "<up>")
-                   (lambda () (interactive)
-                     (let ((window-min-height 1)) (window-resize nil -3 nil))
-                     (hy/interactive-window-resize-all)))
-       (define-key map (kbd "<down>")
-                   (lambda () (interactive)
-                     (let ((window-min-height 1)) (window-resize nil 3 nil))
-                     (hy/interactive-window-resize-all)))
+       
+       ;; 1. 가로(너비) 줄이기: <left> 와 h
+       (let ((left-func (lambda () (interactive)
+                          (let ((window-min-width 1)) (window-resize nil -3 t))
+                          (hy/interactive-window-resize-all))))
+         (define-key map (kbd "<left>") left-func)
+         (define-key map (kbd "h") left-func))
+
+       ;; 2. 가로(너비) 늘리기: <right> 와 l
+       (let ((right-func (lambda () (interactive)
+                           (let ((window-min-width 1)) (window-resize nil 3 t))
+                           (hy/interactive-window-resize-all))))
+         (define-key map (kbd "<right>") right-func)
+         (define-key map (kbd "l") right-func))
+
+       ;; 3. 세로(높이) 줄이기: <up> 과 k
+       (let ((up-func (lambda () (interactive)
+                        (let ((window-min-height 1)) (window-resize nil -3 nil))
+                        (hy/interactive-window-resize-all))))
+         (define-key map (kbd "<up>") up-func)
+         (define-key map (kbd "i") up-func))
+
+       ;; 4. 세로(높이) 늘리기: <down> 과 m (요청하신 부분)
+       (let ((down-func (lambda () (interactive)
+                          (let ((window-min-height 1)) (window-resize nil 3 nil))
+                          (hy/interactive-window-resize-all))))
+         (define-key map (kbd "<down>") down-func)
+         (define-key map (kbd "m") down-func))
+
        map))))
-(global-set-key (kbd "C-x {") #'hy/interactive-window-resize-all)
 
 
 ;;;###autoload

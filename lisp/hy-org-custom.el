@@ -259,26 +259,6 @@
     (message "현재 헤딩의 본문 영역 전체가 선택되었습니다.")))
 
 
-(defun hy/org-modernize-stars ()
-  "Org-mode의 무뚝뚝한 별(*) 기호를 테마 색상과 연동된 고풍스러운 불릿으로 교체.
-외부 패키지 없이 내장 font-lock 정규식 매칭을 사용하여 가볍게 작동."
-  (font-lock-add-keywords 
-   nil
-   '(("^\\(\\(\\*\\)+\\)\\( \\)"
-      (0 (progn
-           (let* ((level (- (match-end 1) (match-beginning 1)))
-                  (bullets '("◉" "○" "●" "○" "▶" "▷" "►"))
-                  (bullet (nth (% (1- level) (length bullets)) bullets))
-                  ;; 해당 레벨에 맞는 Emacs 순정 헤딩 face 명칭을 동적으로 생성 (org-level-1, org-level-2 등)
-                  (face-name (intern (format "org-level-%d" level))))
-             
-             ;; 1. 글자 모양을 불릿으로 교체
-             (put-text-property (match-beginning 1) (match-end 1) 'display bullet)
-             ;; 2. 색상(Face)을 테마의 헤딩 색상과 강제로 일치시켜 가시성 확보
-             (put-text-property (match-beginning 1) (match-end 1) 'face face-name))
-           nil))))))
-
-
 ;; ======================================
 ;;; 3. Main Org Configuration
 ;; ======================================
@@ -286,8 +266,7 @@
   :ensure nil
   :mode ("\\.org\\'" . org-mode)
   :hook (org-mode . (lambda ()
-		      (text-scale-increase 1)
-		      (hy/org-modernize-stars)))
+		      (text-scale-increase 1)))
   :bind (("C-c a" . org-agenda)
          ("C-c c" . org-capture)
          :map org-mode-map
@@ -370,6 +349,19 @@
 ;; ======================================
 ;;; 4. External Packages
 ;; ======================================
+(use-package org-modern
+  :ensure t
+  :hook (org-mode . org-modern-mode)
+  :custom
+  (org-modern-star 'replace)
+  (org-modern-replace-stars '("◉" "○" "●" "○" "▶" "▷"))
+  (org-modern-cycle-stars nil)  ; 6단계 넘으면 마지막 문자(▷) 반복
+  (org-modern-todo nil)         ; TODO 배지 비활성화
+  (org-modern-tag nil)          ; 태그 박스 비활성화
+  (org-modern-keyword nil)      ; 메타데이터 순정 유지
+  (org-modern-timestamp nil))
+
+
 (use-package org-appear
   :ensure t
   :hook (org-mode . org-appear-mode)

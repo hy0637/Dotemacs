@@ -29,8 +29,13 @@
 ;; =====================================================================
 ;;; Keymap Definitions
 ;; =====================================================================
+(hy/defkeymap hy-buffer-prefix-map "Buffer"
+  ("n" "New buffer"           #'hy/create-new-empty-buffer)
+  ("k" "Kill other buffer"    #'hy/kill-other-buffers))
+
 (hy/defkeymap hy-edit-prefix-map "Edit"
   ("i" "Indent dwim"          #'hy/simple-indent-dwim)
+  ("j" "Join next line"       #'hy/join-next-line)
   ("r" "Regexp replace"       #'hy/query-replace-regexp-dwim)
   ("l" "current Line"         #'hy/select-current-line)
   ("d" "Duplicate"            #'duplicate-dwim)
@@ -53,7 +58,8 @@
   ("i" "insert Img"           #'hy/org-insert-image)
   ("I" "insert Img manual"    #'hy/org-insert-image-manual)
   ("l" "insert-Link-dwim"     #'hy/org-insert-link-dwim)
-  ("m" "Mark-current-body"    #'hy/org-mark-current-body-only))
+  ("m" "Mark-current-body"    #'hy/org-mark-current-body-only)
+  ("s" "insert-Space-after"   #'hy/org-insert-space-after-punctuation))
   
 (hy/defkeymap hy-search-prefix-map "Search"
   ("g" "Grep"                 #'consult-grep)
@@ -82,6 +88,7 @@
   ("r" "window Resize"        #'hy/interactive-window-resize-all))
 
 (hy/defkeymap hy-emacs-prefix-map "Master"
+  ("b" "Buffer"               hy-buffer-prefix-map)
   ("e" "Edit"                 hy-edit-prefix-map)
   ("f" "Finishing"            hy-finishing-prefix-map)
   ("l" "Life"                 hy-life-prefix-map)
@@ -92,6 +99,28 @@
   ("w" "Window"               hy-window-prefix-map))
 
 
+;; =====================================================================
+;;; Overriding Minor Mode를 통한 M-SPC 마스터 키 보호 설정
+;; =====================================================================
+
+;; 1. 최상위 우선순위를 가질 오버라이딩 키맵 정의
+(defvar hy-overrides-mode-map (make-sparse-keymap)
+  "어떤 Major mode보다도 우선하여 작동할 최상위 단축키 맵.")
+
+;; 2. 전역 마이너 모드 선언
+(define-minor-mode hy-overrides-mode
+  "hy-keys의 핵심 진입점 및 필수 단축키를 보호하는 전역 마이너 모드."
+  :global t
+  :init-value nil
+  :keymap hy-overrides-mode-map)
+
+;; 3. M-SPC 단축키를 이 오버라이딩 맵에 강제 지정
+;; 어떤 Major mode(org-mode 등)에 있더라도, 한글 입력 상태와 상관없이 
+;; M-SPC를 누르면 무조건 IME가 비활성화되면서 최상위 마스터 맵이 열립니다.
+(define-key hy-overrides-mode-map (kbd "M-o") #'hy/prefix-with-ime-deactivation)
+
+;; 4. 마이너 모드 활성화 (Emacs 구동 시 자동 켜짐)
+(hy-overrides-mode 1)
 
 (provide 'hy-keys)
 ;;; hy-keys.el ends here

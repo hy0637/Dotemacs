@@ -130,6 +130,16 @@ or the Completions buffer."
 
 
 ;;;###autoload
+(defun hy/create-new-empty-buffer ()
+  "이름이 겹치지 않는 새로운 빈 버퍼 생성 ->전환"
+  (interactive)
+  (let ((new-buf (generate-new-buffer "*new-buffer*")))
+    (switch-to-buffer new-buf)
+    (funcall (default-value 'major-mode)) ; 기본 메이저 모드
+    (message "새 버퍼가 생성되었습니다: %s" (buffer-name new-buf))))
+
+
+;;;###autoload
 (defun hy/buffer-to-pdf-pandoc ()
   "Convert the current buffer to PDF using Pandoc.
 Code files (.el, .py, .sh, etc.) are wrapped in a Markdown code block
@@ -260,39 +270,36 @@ Automatically skips Org-mode src blocks to prevent code syntax errors."
     (message "%s 따옴표 %d개 변환 완료" (if reverse "곧은" "둥근") count)))
 
 
-
-;;  =============================================
-;;; hy/repeat-last-command(Excel F4)
-;;  =============================================
-(defvar hy/last-edit-command nil
-  "사용자가 실행한 마지막 주요 편집/사용자 명령 저장")
-
-(defun hy/track-last-command ()
-  "커서 이동, 영역 지정 등을 제외한 실제 실행 명령만 기록"
-  (unless (minibufferp)
-    (let ((cmd this-command))
-      (when (and cmd
-                 (symbolp cmd)
-                 (not (memq cmd '(hy/repeat-last-command
-                                  universal-argument
-                                  digit-argument)))
-                 ;; 커서 이동 및 영역 확장(expand-region 등) 관련 명령어 기록에서 제외
-                 (not (string-match-p "\\(move\\|next\\|previous\\|forward\\|backward\\|scroll\\|select\\|region\\|mark\\|left-char\\|right-char\\)" 
-                                      (symbol-name cmd))))
-        (setq hy/last-edit-command cmd)))))
-
-;; Emacs 명령 실행 훅에 등록
-(add-hook 'post-command-hook 'hy/track-last-command)
-
-(defun hy/repeat-last-command ()
-  "단축키나 M-x로 실행했던 마지막 편집 명령을 영역 지정에 구애받지 않고 재실행"
+;;;###autoload
+(defun hy/org-insert-space-after-punctuation ()
+  "특수기호(, . : ; \") 뒤에 공백 한 칸을 자동으로 삽입.
+블록(Region)을 지정하면 해당 범위만 적용되고, 지정하지 않으면 버퍼 전체에 적용.
+단, 여는 따옴표(“)는 대상에서 제외."
   (interactive)
-  (if hy/last-edit-command
-      (let ((cmd hy/last-edit-command))
-        (message "재실행 명령: %s" cmd)
-        (command-execute cmd))
-    (error "이전에 실행한 적절한 명령이 없습니다.")))
+  (let ((beg (if (use-region-p) (region-beginning) (point-min)))
+        (end (if (use-region-p) (region-end) (point-max))))
+    (save-excursion
+      (goto-char beg)
+      ;; 지정된 범위(end) 안에서만 정규식 매칭 수행.
+      (while (re-search-forward "\\([,\\.:;\\”]\\)\\([^[:space:]\n]\\)" end t)
+        (replace-match "\\1 \\2"))
+      (if (use-region-p)
+          (message "선택한 범위의 특수기호 뒤 공백 정돈 완료!")
+        (message "버퍼 전체의 특수기호 뒤 공백 정돈 완료!")))))
 
+;;  =============================================
+;;; hy/repeat-last-mx-command(Excel F4)
+;;  =============================================
+(defun hy/repeat-last-mx-command ()
+  "M-x 기록(vertico 상위)의 최신 명령을 영역 지정에 구애받지 않고 재실행."
+  (interactive)
+  (if (and (boundp 'extended-command-history) extended-command-history)
+      (let ((last-cmd (intern (car extended-command-history))))
+        (message "재실행 명령: M-x %s" last-cmd)
+        (command-execute last-cmd))
+    (message "안내: 아직 실행한 M-x 명령 기록이 없습니다.")))
 
+  
+  
 (provide 'hy-useful-custom)
 ;;; hy-useful-custom.el ends here

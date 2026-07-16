@@ -6,6 +6,7 @@
 (require 'consult)
 (require 'ucs-normalize)
 
+
 ;; ======================================
 ;;; Configuration
 ;; ======================================
@@ -24,7 +25,7 @@
     ("PDF Files"      . "~/Dropbox/Docs/pdf/") 
     ("Notes/Person"   . "~/Dropbox/Docs/Person/")
     ("Denote"         . "~/Dropbox/Docs/org/denote/")
-    ("Emacs Config"   . "~/Project/Dotemacs/")) ; 수정된 Emacs 설정 디렉토리 반영
+    ("Emacs Config"   . "~/Project/Dotemacs/"))
   "List of local directories for ripgrep search.")
 
 
