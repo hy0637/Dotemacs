@@ -34,31 +34,30 @@
 
 
 ;;; ###autoload
-(defun hy/open-line-below ()
-  "Open a new line below the current line and move point there."
-  (interactive)
-  (end-of-line)
-  (newline-and-indent))
-
-(global-set-key (kbd "C-c o") 'hy/open-line-below)
-
-
-;;; ###autoload
-(defun hy/join-next-line ()
-  "Join the current line with the following line."
-  (interactive)
-  (join-line 1))
-
-
-;;; ###autoload
-(defun hy/query-replace-regexp-dwim (arg)
-  "Replace in region if active, else in whole buffer."
+(defun hy/new-or-join-line (arg)
+  "Create a new line below, or join the next line with a prefix ARG.
+현재 줄 아래에 새 줄 생성 -> 이동(C-u: 다음 줄을 현재 줄 끝으로 끌어올려 합침)."
   (interactive "P")
+  (if arg
+      ;; C-u S-<return> 입력 시: 아래 줄을 현재 줄로 합침
+      (join-line 1)
+    ;; 그냥 S-<return> 입력 시: 아래에 새 줄 열고 이동
+    (end-of-line)
+    (newline-and-indent)))
+
+
+;;; ###autoload
+(defun hy/query-replace-regexp-dwim (from-regexp to-string &optional delimited)
+  "블록(Region)이 활성화되어 있으면 해당 범위 내에서만,
+그렇지 않으면 버퍼 전체를 대상으로 정규식 치환을 수행."
+  (interactive
+   (let ((common (query-replace-read-args "Query replace regexp" t t)))
+     (list (nth 0 common) (nth 1 common) (nth 2 common))))
+  
   (let ((start (if (use-region-p) (region-beginning) (point-min)))
-        (end (if (use-region-p) (region-end) (point-max))))
-    (save-excursion
-      (goto-char start)
-      (call-interactively #'query-replace-regexp))))
+        (end   (if (use-region-p) (region-end) (point-max))))
+    
+    (query-replace-regexp from-regexp to-string delimited start end)))
 
 
 ;;https://github.com/protesilaos/dotfiles
@@ -77,9 +76,8 @@
 
 
 (defun hy/keyboard-quit-dwim ()
-  "Do-what-I-mean quit behavior.
-Handle 'keyboard-quit' based on the current context, such as an active region, open minibuffer,
-or the Completions buffer."
+  "Context-aware keyboard quit behavior.
+Handles active region, minibuffer, or completion list."
   (interactive)
   (cond
    ((region-active-p)                      ; 1. 블록이 잡혀있으면 블록 해제
@@ -226,8 +224,8 @@ trailing spaces, doubled spaces, and excess blank lines."
 
 ;;;###autoload
 (defun hy/normalize-quotes (beg end &optional reverse)
-  "Convert straight quotes to curly quotes in region or whole buffer.
-With a prefix argument REVERSE (e.g., C-u), convert curly quotes back to straight quotes.
+"Toggle between straight and curly quotes in region or buffer.
+With a prefix argument REVERSE, convert curly quotes back to straight.
 Automatically skips Org-mode src blocks to prevent code syntax errors."
   (interactive
    (let ((r-beg (if (use-region-p) (region-beginning) (point-min)))
@@ -276,16 +274,24 @@ Automatically skips Org-mode src blocks to prevent code syntax errors."
 블록(Region)을 지정하면 해당 범위만 적용되고, 지정하지 않으면 버퍼 전체에 적용.
 단, 여는 따옴표(“)는 대상에서 제외."
   (interactive)
-  (let ((beg (if (use-region-p) (region-beginning) (point-min)))
-        (end (if (use-region-p) (region-end) (point-max))))
+  (let* ((beg (if (use-region-p) (region-beginning) (point-min)))
+         ;; end 위치를 마커로 지정하여 치환 시 범위가 늘어나는 현상에 대응
+         (end-marker (if (use-region-p) 
+                         (copy-marker (region-end)) 
+                       (copy-marker (point-max)))))
     (save-excursion
       (goto-char beg)
-      ;; 지정된 범위(end) 안에서만 정규식 매칭 수행.
-      (while (re-search-forward "\\([,\\.:;\\”]\\)\\([^[:space:]\n]\\)" end t)
+      ;; 지정된 범위(end-marker) 안에서만 정규식 매칭 수행
+      (while (re-search-forward "\\([,\\.:;\\”]\\)\\([^[:space:]\n]\\)" end-marker t)
         (replace-match "\\1 \\2"))
+      
+      ;; 메모리 누수 방지를 위해 마커 해제
+      (set-marker end-marker nil)
+      
       (if (use-region-p)
           (message "선택한 범위의 특수기호 뒤 공백 정돈 완료!")
         (message "버퍼 전체의 특수기호 뒤 공백 정돈 완료!")))))
+
 
 ;;  =============================================
 ;;; hy/repeat-last-mx-command(Excel F4)

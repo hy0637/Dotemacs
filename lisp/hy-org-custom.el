@@ -277,8 +277,9 @@
          ("M-,"       . org-insert-structure-template)
          ("C-c C-l"   . hy/org-insert-link-dwim)
          ("C-c C-x d" . hy/org-insert-drawer-custom)
+         ("C-c C-x m"   . hy/org-mark-current-body-only)
          ("C-c C-x C-f" . hy/pair-wrap)
-         ("C-c C-x m"   . hy/org-mark-current-body-only))
+	 ("S-<return>"  . hy/new-or-join-line))
   
   :custom
   (org-agenda-files                    (list hy/f-tasks hy/f-daily hy/f-health))
