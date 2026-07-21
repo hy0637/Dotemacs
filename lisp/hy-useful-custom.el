@@ -194,32 +194,45 @@ Requires pandoc and xelatex to be installed."
 
 
 ;;;###autoload
-(defun hy/tidy-whitespace (beg end)
-  "Clean up whitespace in region or whole buffer:
-trailing spaces, doubled spaces, and excess blank lines."
+(defun hy/tidy-whitespace-dwim (beg end &optional general-clean)
+  "본문 또는 블록 내 공백을 컨텍스트에 맞춰 정돈.
+기본 실행: 특수기호(, . : ; ” ' ?) 뒤 공백 삽입을 원 포인트로 수행 (연속 기호 대응).
+C-u 접두사 입력: 행끝 공백, 이중 공백, 과도한 빈 줄 청소."
   (interactive
-   (if (use-region-p)
-       (list (region-beginning) (region-end))
-     (list (point-min) (point-max))))
+   (let ((r-beg (if (use-region-p) (region-beginning) (point-min)))
+         (r-end (if (use-region-p) (region-end) (point-max))))
+     (list r-beg r-end current-prefix-arg)))
   (let ((count 0)
         (end-marker (copy-marker end)))
     (save-excursion
-      ;; 행끝 공백
       (goto-char beg)
-      (while (re-search-forward "[ \t]+$" end-marker t)
-        (replace-match "") (setq count (1+ count)))
-      ;; 본문 속 이중 공백 (들여쓰기는 보호)
-      (goto-char beg)
-      (while (re-search-forward "\\([^ \t\n]\\)[ ]\\{2,\\}" end-marker t)
-        (replace-match "\\1 ") (setq count (1+ count)))
-      ;; 3연속 이상 빈 줄 → 1개로
-      (goto-char beg)
-      (while (re-search-forward "\n\\{3,\\}" end-marker t)
-        (replace-match "\n\n") (setq count (1+ count))))
+      (if general-clean
+          ;; 1. C-u 입력 시: 일반 공백 노이즈 전체 청소
+          (progn
+            ;; 행끝 공백 제거
+            (while (re-search-forward "[ \t]+$" end-marker t)
+              (replace-match "") (setq count (1+ count)))
+            ;; 本문 속 이중 공백 제거 (들여쓰기 보호)
+            (goto-char beg)
+            (while (re-search-forward "\\([^ \t\n]\\)[ ]\\{2,\\}" end-marker t)
+              (replace-match "\\1 ") (setq count (1+ count)))
+            ;; 3연속 이상 빈 줄 → 1개로 축소
+            (goto-char beg)
+            (while (re-search-forward "\n\\{3,\\}" end-marker t)
+              (replace-match "\n\n") (setq count (1+ count))))
+        
+        ;; 2. 기본 실행 시: 특수기호 뒤 공백 정밀 타격 (연속 기호 완벽 대응)
+        ;; 대상 기호군에 작은따옴표(')도 안전하게 포함했습니다.
+        (while (re-search-forward "\\([,\\.:;\\”'?]+\\)\\([^[:space:]\n]\\)" end-marker t)
+          (replace-match "\\1 \\2")
+          (setq count (1+ count)))))
+    
     (set-marker end-marker nil)
     (when (use-region-p)
       (setq deactivate-mark nil))
-    (message "공백 %d곳 정돈" count)))
+    (if general-clean
+        (message "🧹 일반 공백 노이즈 %d곳 청소 완료!" count)
+      (message "✨ 특수기호 뒤 공백 %d곳 정돈 완료!" count))))
 
 
 ;;;###autoload
@@ -268,42 +281,17 @@ Automatically skips Org-mode src blocks to prevent code syntax errors."
     (message "%s 따옴표 %d개 변환 완료" (if reverse "곧은" "둥근") count)))
 
 
-;;;###autoload
-(defun hy/org-insert-space-after-punctuation ()
-  "특수기호(, . : ; \") 뒤에 공백 한 칸을 자동으로 삽입.
-블록(Region)을 지정하면 해당 범위만 적용되고, 지정하지 않으면 버퍼 전체에 적용.
-단, 여는 따옴표(“)는 대상에서 제외."
-  (interactive)
-  (let* ((beg (if (use-region-p) (region-beginning) (point-min)))
-         ;; end 위치를 마커로 지정하여 치환 시 범위가 늘어나는 현상에 대응
-         (end-marker (if (use-region-p) 
-                         (copy-marker (region-end)) 
-                       (copy-marker (point-max)))))
-    (save-excursion
-      (goto-char beg)
-      ;; 지정된 범위(end-marker) 안에서만 정규식 매칭 수행
-      (while (re-search-forward "\\([,\\.:;\\”]\\)\\([^[:space:]\n]\\)" end-marker t)
-        (replace-match "\\1 \\2"))
-      
-      ;; 메모리 누수 방지를 위해 마커 해제
-      (set-marker end-marker nil)
-      
-      (if (use-region-p)
-          (message "선택한 범위의 특수기호 뒤 공백 정돈 완료!")
-        (message "버퍼 전체의 특수기호 뒤 공백 정돈 완료!")))))
-
-
 ;;  =============================================
 ;;; hy/repeat-last-mx-command(Excel F4)
 ;;  =============================================
-(defun hy/repeat-last-mx-command ()
-  "M-x 기록(vertico 상위)의 최신 명령을 영역 지정에 구애받지 않고 재실행."
-  (interactive)
-  (if (and (boundp 'extended-command-history) extended-command-history)
-      (let ((last-cmd (intern (car extended-command-history))))
-        (message "재실행 명령: M-x %s" last-cmd)
-        (command-execute last-cmd))
-    (message "안내: 아직 실행한 M-x 명령 기록이 없습니다.")))
+;; (defun hy/repeat-last-mx-command ()
+;;   "M-x 기록(vertico 상위)의 최신 명령을 영역 지정에 구애받지 않고 재실행."
+;;   (interactive)
+;;   (if (and (boundp 'extended-command-history) extended-command-history)
+;;       (let ((last-cmd (intern (car extended-command-history))))
+;;         (message "재실행 명령: M-x %s" last-cmd)
+;;         (command-execute last-cmd))
+;;     (message "안내: 아직 실행한 M-x 명령 기록이 없습니다.")))
 
   
   

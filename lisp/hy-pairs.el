@@ -1,6 +1,6 @@
 ;;; hy-pairs.el --- configuration -*- lexical-binding: t; -*-
 
-;;; 20260705 Created by HY
+;;; ver20260719
 
 ;;; CODE;
 
@@ -50,15 +50,11 @@
                 (if (characterp (cdr pd)) (char-to-string (cdr pd)) (cdr pd)))
         (let ((s (char-to-string pd))) (cons s s))))))
 
-;; --- 공용 헬퍼: OPEN-STR...CLOSE-STR로 둘러싸인 대상을 범위 내에서 찾아
-;;     벗기거나(strip) 통째로 삭제(erase) ---
-;; 일반 기호와 한자 병기가 공유하는 핵심 로직. 차이는 open/close str과
-;; CONTENT-REGEXP뿐이다.
 (defun hy/pair--process-range (beg end open-str close-str content-regexp mode)
   "BEG..END 범위에서 OPEN-STR CONTENT-REGEXP CLOSE-STR 패턴을 모두 찾아
-MODE에 따라 처리하고, 처리한 개수를 반환합니다.
-MODE가 'strip 이면 괄호(기호)만 벗기고 내용은 남기고,
-MODE가 'erase 이면 괄호(기호)+내용을 통째로 삭제합니다."
+MODE에 따라 처리하고, 처리한 개수를 반환.
+MODE가 'strip: 괄호(기호)만 벗기고 내용은 남기고,
+MODE가 'erase: 괄호(기호)+내용을 통째로 삭제합니다."
   (let* ((pattern (concat (regexp-quote open-str)
                            "\\(" content-regexp "\\)"
                            (regexp-quote close-str)))
@@ -78,9 +74,9 @@ MODE가 'erase 이면 괄호(기호)+내용을 통째로 삭제합니다."
 ;; 일반 기호: Wrap (독립 명령 — 메뉴 없이 즉시 실행)
 ;; ---------------------------------------
 (defun hy/pair-wrap ()
-  "일반 쌍 기호로 region(또는 word at point)을 즉시 감쌉니다.
+  "일반 쌍 기호로 region(또는 word at point)을 즉시 감쌈.
 메뉴 없이 기호 입력만으로 바로 실행.
-hy/pair-manage의 [1] Wrap 분기에서도 이 함수를 그대로 호출."
+hy/pair-manage의 [1] Wrap 분기에서도 이 함수 그대로 호출."
   (interactive)
   (let* ((char (read-char "기호 입력 (*, /, =, (, <...): "))
          (entry (assoc char hy/pair-pairs))
@@ -156,7 +152,7 @@ hy/pair-manage의 [1] Wrap 분기에서도 이 함수를 그대로 호출."
 ;; 한자 병기: Wrap 전용 로직
 ;; ---------------------------------------
 (defun hy/pair--wrap-hanja (beg end)
-  "BEG..END 범위 내 모든 한자 뭉치를 괄호로 감쌉니다."
+  "BEG..END 범위 내 모든 漢字 뭉치를 괄호로 감쌈."
   (let ((count 0)
         (end-marker (copy-marker end)))
     (save-excursion
@@ -173,14 +169,13 @@ hy/pair-manage의 [1] Wrap 분기에서도 이 함수를 그대로 호출."
     (message "漢字 괄호 감싸기 %d곳 완료" count)))
 
 ;; ---------------------------------------
-;; 2단계(1/2/3) 공용 디스패처
+;; 2단계(1/2/3/4) 공용 디스패처
 ;; ---------------------------------------
-(cl-defun hy/pair--dispatch-action (beg end &key open-close-reader content-regexp wrap-fn)
-  "[1]Wrap/[2]Strip/[3]Erase 중 선택하여 실행하는 공용 2단계 로직.
-OPEN-CLOSE-READER는 호출 시 (OPEN . CLOSE) 문자열 쌍을 반환하는 함수
-(strip/erase에서만 사용, wrap은 WRAP-FN이 자체적으로 기호를 입력받음)."
+(cl-defun hy/pair--dispatch-action (beg end &key open-close-reader content-regexp wrap-fn swap-reverse-p)
+  "[1]Wrap / [2]Strip / [3]Erase / [4]Swap 중 선택하여 실행하는 공용 2단계 로직.
+SWAP-REVERSE-P가 t이면 역방향(漢字(한글)->한글(漢字))으로 swap 시도."
   (let ((choice (read-char-from-minibuffer
-                 "선택 [1] 감싸기(Wrap)  [2] 벗기기(Strip)  [3] 내용째 삭제(Erase): ")))
+                 "선택 [1] 감싸기(Wrap)  [2] 벗기기(Strip)  [3] 내용째 삭제(Erase)  [4] 漢字한글 Swap: ")))
     (cond
      ((eq choice ?1)
       (funcall wrap-fn beg end))
@@ -198,18 +193,32 @@ OPEN-CLOSE-READER는 호출 시 (OPEN . CLOSE) 문자열 쌍을 반환하는 함
           (message "'%s…%s' 내용 포함 %d곳 제거" (car pair) (cdr pair)
                    (hy/pair--process-range beg end (car pair) (cdr pair)
                                            content-regexp 'erase)))))
+     ((eq choice ?4)
+      ;; 한글/한자 순서 뒤집기 실행
+      (let* ((pattern (if swap-reverse-p
+                          "\\([一-鿿]+\\)(\\([가-힣]+\\))"   ; 한자(한글)
+                        "\\([가-힣]+\\)(\\([一-鿿]+\\))"))   ; 한글(한자)
+             (count 0)
+             (end-marker (copy-marker end)))
+        (save-excursion
+          (goto-char beg)
+          (while (re-search-forward pattern end-marker t)
+            (replace-match "\\2(\\1)" t)
+            (setq count (1+ count))))
+        (set-marker end-marker nil)
+        (message "%d곳 순서 변환 완료 (%s)"
+                 count
+                 (if swap-reverse-p "漢字(한글) → 한글(漢字)" "한글(漢字) → 漢字(한글)"))))
      (t (message "취소되었습니다.")))))
 
 ;; ---------------------------------------
-;; 통합 진입점: 漢字/일반(C-u) + 1/2/3)
+;; 통합 진입점: 漢字/일반(C-u) + 1/2/3/4 Action
 ;; ---------------------------------------
+;;;###autoload
 (defun hy/pair-manage (beg end &optional alt-mode)
-  "쌍 기호 또는 한자 병기를 감싸기/벗기기/내용째 삭제로 관리.
-
-기본(자주 사용): 곧바로 '漢字 병기' 관리 모드로 진입.
-\\[universal-argument] (C-u) 접두사: 거의 안 쓰는 '일반 기호' 관리 모드로 진입.
-
-2단계 액션은 `hy/pair--dispatch-action` 내부 인터페이스를 따름."
+  "쌍 기호, 한자 괄호 감싸기 및 한글/漢字 병기 순서 교체(Swap) 통합 관리.
+기본 실행: '漢字 병기 및 정방향 Swap' 관리 모드로 진입.
+\\[universal-argument] (C-u) 접두사: '일반 기호 및 역방향 Swap' 관리 모드로 진입."
   (interactive
    (append
     (if (use-region-p)
@@ -217,63 +226,24 @@ OPEN-CLOSE-READER는 호출 시 (OPEN . CLOSE) 문자열 쌍을 반환하는 함
       (list (point-min) (point-max)))
     (list current-prefix-arg)))
   
-  ;; alt-mode(C-u)가 없으면(?h, 한자), 있으면(?g, 일반)으로 자동 결정
   (let ((target (if alt-mode ?g ?h)))
     (pcase target
       (?h (hy/pair--dispatch-action
            beg end
            :open-close-reader (lambda () (cons "(" ")"))
            :content-regexp "[一-鿿]+"
-           :wrap-fn #'hy/pair--wrap-hanja))
+           :wrap-fn #'hy/pair--wrap-hanja
+           :swap-reverse-p nil)) ;; 기본 실행 시 정방향 Swap 매칭
       (?g (hy/pair--dispatch-action
            beg end
            :open-close-reader (lambda ()
                                 (hy/pair--strings
                                  (read-char "기호 입력 (*, (, <, M...): ")))
            :content-regexp "\\(?:.\\|\n\\)*?"
-           :wrap-fn (lambda (_beg _end) (hy/pair-wrap))))
-      (_ (message "취소되었습니다.")))
+           :wrap-fn (lambda (_beg _end) (hy/pair-wrap))
+           :swap-reverse-p t))) ;; C-u 실행 시 역방향 Swap 매칭
     (when (use-region-p)
       (setq deactivate-mark nil))))
-
-
-;; (with-eval-after-load 'embark
-;;   (dolist (map (list embark-symbol-map
-;;                      embark-region-map
-;;                      embark-general-map))
-;;     (define-key map (kbd "w") #'hy/pair-manage)))
-
-
-;;; swap hangul/hanja
-
-;;; ###autoload
-(defun hy/swap-hangul-hanja-order (beg end &optional reverse)
-  "범위(또는 지정 없으면 버퍼 전체)에서 한글/漢字 병기 순서를 바꿉니다.
-기본: '한글(漢字)' -> '漢字(한글)'
-\\[universal-argument] (C-u) 접두사: '漢字(한글)' -> '한글(漢字)' (역방향)"
-  (interactive
-   (append
-    (if (use-region-p)
-        (list (region-beginning) (region-end))
-      (list (point-min) (point-max)))
-    ;; C-u 입력 여부를 확실한 t 또는 nil로 변환하여 전달
-    (list (not (null current-prefix-arg)))))
-  (let* ((pattern (if reverse
-                      "\\([一-鿿]+\\)(\\([가-힣]+\\))"   ;; 1:한자, 2:한글
-                    "\\([가-힣]+\\)(\\([一-鿿]+\\))"))   ;; 1:한글, 2:한자
-         ;; reverse 상태에 따라 바꿀 결과 모양을 명확히 지정
-         (to-string (if reverse "\\2(\\1)" "\\2(\\1)")) 
-         (count 0)
-         (end-marker (copy-marker end)))
-    (save-excursion
-      (goto-char beg)
-      (while (re-search-forward pattern end-marker t)
-        (replace-match to-string t)
-        (setq count (1+ count))))
-    (set-marker end-marker nil)
-    (message "%d곳 순서 변환 완료 (%s)"
-             count
-             (if reverse "漢字(한글) → 한글(漢字)" "한글(漢字) → 漢字(한글)"))))
 
 
 

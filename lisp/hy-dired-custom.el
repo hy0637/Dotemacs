@@ -10,7 +10,7 @@
 
 
 (defun hy/dired-open-dwim ()
-  "Open file in Emacs or via macOS 'open' command based on its extension."
+  "Open file in Emacs or via macOS \\'open\\' command based on its extension."
   (interactive)
   (let* ((file (dired-get-file-for-visit))
          (ext (file-name-extension file t)))

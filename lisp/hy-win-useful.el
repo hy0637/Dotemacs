@@ -18,49 +18,53 @@ excluding the Dock and Menu bar."
 
 
 ;;;###autoload
-(defun hy/tile-frame-left ()
-  "Snap the Emacs frame to the Left half of the screen."
+(defun hy/tile-frame-dwim ()
+  "Emacs 프레임 화면 스냅 및 레이아웃 제어 (C-x f)
+
+         [↑ / i] 전체화면
+   [← / j] 왼쪽  [→ / l] 오른쪽     [s] 사이드바 토글
+         [↓ / m] 중앙 2/3           [r] 창 크기 조절 모드(Resize)"
   (interactive)
-  (let* ((area (hy/get-display-workarea))
-         (x      (nth 0 area))
-         (y      (nth 1 area))
-         (width  (nth 2 area))
-         (height (nth 3 area))
-         (half-w (/ width 2)))
-    (set-frame-position nil x y)
-    (set-frame-size nil half-w height t)) ; t = pixel 단위
-  (message "◧ Moved to Left Half"))
+  (message "프레임 제어: [←/j]왼쪽 [→/l]오른쪽 [↓/m]중앙 [↑/i]전체 | [s]사이드바 [r]리사이즈 (종료: 다른키)")
+  (set-transient-map
+   (let ((map (make-sparse-keymap))
+         (area (hy/get-display-workarea)))
+     (let* ((x      (nth 0 area))
+            (y      (nth 1 area))
+            (width  (nth 2 area))
+            (height (nth 3 area))
+            (half-w (/ width 2))
+            
+            ;; 스냅 함수들
+            (snap-left   (lambda () (interactive) (set-frame-position nil x y) (set-frame-size nil half-w height t) (hy/tile-frame-dwim)))
+            (snap-right  (lambda () (interactive) (set-frame-position nil (+ x half-w) y) (set-frame-size nil half-w height t) (hy/tile-frame-dwim)))
+            (snap-center (lambda () (interactive) (let ((w (/ (* width 2) 3))) (set-frame-position nil (+ x (/ (- width w) 2)) y) (set-frame-size nil w height t)) (hy/tile-frame-dwim)))
+            (snap-full   (lambda () (interactive) (toggle-frame-fullscreen) (hy/tile-frame-dwim)))
+            
+            ;; 추가 동작 함수들
+            (action-sidebar (lambda () (interactive)
+                              (hy/toggle-sidebar-layout-20)
+                              (hy/tile-frame-dwim))) ; 실행 후 대기모드 유지
+            (action-resize  (lambda () (interactive)
+                              ;; 리사이즈는 자체 대기 루프가 있으므로, 
+                              ;; 프레임 스냅 모드를 끝내면서 리사이즈 모드로 바통을 넘깁니다.
+                              (hy/interactive-window-resize-all))))
 
+       ;; 방향 및 이동 바인딩
+       (define-key map (kbd "<left>")  snap-left)
+       (define-key map (kbd "j")       snap-left)
+       (define-key map (kbd "<right>") snap-right)
+       (define-key map (kbd "l")       snap-right)
+       (define-key map (kbd "<down>")  snap-center)
+       (define-key map (kbd "m")       snap-center)
+       (define-key map (kbd "<up>")    snap-full)
+       (define-key map (kbd "i")       snap-full)
 
-;;;###autoload
-(defun hy/tile-frame-right ()
-  "Snap the Emacs frame to the Right half of the screen."
-  (interactive)
-  (let* ((area (hy/get-display-workarea))
-         (x      (nth 0 area))
-         (y      (nth 1 area))
-         (width  (nth 2 area))
-         (height (nth 3 area))
-         (half-w (/ width 2)))
-    (set-frame-position nil (+ x half-w) y)
-    (set-frame-size nil half-w height t))
-  (message "◨ Moved to Right Half"))
+       ;; 창/동작 관련 기능 확장 바인딩
+       (define-key map (kbd "s")       action-sidebar)
+       (define-key map (kbd "r")       action-resize)
 
-
-;;;###autoload
-(defun hy/tile-frame-center ()
-  "Snap the Emacs frame to the center 2/3 of the screen."
-  (interactive)
-  (let* ((area   (hy/get-display-workarea))
-         (x      (nth 0 area))
-         (y      (nth 1 area))
-         (width  (nth 2 area))
-         (height (nth 3 area))
-         (two-thirds-w (/ (* width 2) 3))
-         (offset-x    (/ (- width two-thirds-w) 2)))
-    (set-frame-position nil (+ x offset-x) y)
-    (set-frame-size nil two-thirds-w height t))
-  (message "▣ center 2/3"))
+       map))))
 
 
 ;;;###autoload
@@ -101,7 +105,7 @@ and adjusts the left window to 20% and the right window to 80%."
   "방향키(←/→/↑/↓) 또는 문자키로 창의 너비와 높이를 제한 없이 조절.
 임시로 최소 크기 제한을 해제하여 원하는 만큼 자유롭게 축소."
   (interactive)
-  (message "창 크기 조절: [←/h] 축소, [→/l] 확대 | [↑/i] 축소, [↓/m] 확대 (종료: 다른 키)")
+  (message "창 크기 조절: [←/j] 축소, [→/l] 확대 | [↑/i] 축소, [↓/m] 확대 (종료: 다른 키)")
   (let ((window-min-width 1)
         (window-min-height 1)
         (window-size-fixed nil))
@@ -113,7 +117,7 @@ and adjusts the left window to 20% and the right window to 80%."
                           (let ((window-min-width 1)) (window-resize nil -3 t))
                           (hy/interactive-window-resize-all))))
          (define-key map (kbd "<left>") left-func)
-         (define-key map (kbd "h") left-func))
+         (define-key map (kbd "j") left-func))
 
        ;; 2. 가로(너비) 늘리기: <right> 와 l
        (let ((right-func (lambda () (interactive)

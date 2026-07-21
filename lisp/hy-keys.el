@@ -1,6 +1,6 @@
 ;;; hy-keys.el --- Optimized keybindings -*- lexical-binding: t; -*-
 ;;
-;; ver 20260705
+;; ver 20260718
 ;;
 ;; =====================================================================
 ;;; Helper Functions
@@ -34,32 +34,29 @@
   ("k" "Kill other buffer"    #'hy/kill-other-buffers))
 
 (hy/defkeymap hy-edit-prefix-map "Edit"
+  ("d" "Duplicate"            #'duplicate-dwim)
   ("i" "Indent dwim"          #'hy/simple-indent-dwim)
-  ("j" "Join next line"       #'hy/join-next-line)
   ("r" "Regexp replace"       #'hy/query-replace-regexp-dwim)
   ("l" "current Line"         #'hy/select-current-line)
-  ("d" "Duplicate"            #'duplicate-dwim)
-  ("o" "Open newline below"   #'hy/open-line-below)
+  ("n" "New or join line"     #'hy/new-or-join-line)
   ("p" "buffer2PDF"           #'hy/buffer-to-pdf-pandoc)
   ("u" "Unfill paragraph"     #'hy/unfill-paragraph)
   ("%" "Replace"              #'query-replace))
 
 (hy/defkeymap hy-finishing-prefix-map "Finishing"
-  ;; ("h" "manage Hanja"         #'hy/manage-hanja-annotations)
+  ("s" "Spell check"          #'hy/org-korean-spellcheck-region)
   ("q" "normalize Quotes"     #'hy/normalize-quotes)
-  ;; ("w" "Pairs (u)wrap"        #'hy/pair-pairs-wrap)
-  ("w" "Pairs manage"         #'hy/pair-manage)
-  ("W" "tidy-Witespace"       #'hy/tidy-whitespace))
+  ("p" "Pairs wrap"           #'hy/pair-pairs-wrap)
+  ("P" "Pairs Manage"         #'hy/pair-manage))
 
 (hy/defkeymap hy-org-prefix-map "ORG"
-  ;; ("b" "insert-prefix-Block"  #'hy/org-insert-custom-prefix-to-blocks)
   ("d" "insert-Drawer"        #'hy/org-insert-drawer-custom)
   ("e" "toggle-emphasis"      #'hy/org-toggle-emphasis-markers)
   ("i" "insert Img"           #'hy/org-insert-image)
   ("I" "insert Img manual"    #'hy/org-insert-image-manual)
   ("l" "insert-Link-dwim"     #'hy/org-insert-link-dwim)
   ("m" "Mark-current-body"    #'hy/org-mark-current-body-only)
-  ("s" "insert-Space-after"   #'hy/org-insert-space-after-punctuation))
+  ("w" "whitespace-dwim"      #'hy/tidy-whitespace-dwim))
   
 (hy/defkeymap hy-search-prefix-map "Search"
   ("g" "Grep"                 #'consult-grep)
@@ -78,8 +75,8 @@
   ("T" "Bp tag stats"         #'hy/show-bp-stats-by-tag))
 
 (hy/defkeymap hy-media-prefix-map "Media"
-  ("P" "Play radio"           #'hy/radio-play)
-  ("S" "Stop radio"           #'hy/radio-stop))
+  ("p" "Play/stop radio"      #'hy/radio-play)
+  ("s" "Stop radio"           #'hy/radio-stop))
 
 (hy/defkeymap hy-window-prefix-map "Window"
   ("c" "Caffeine on"          #'hy/caffeine-on)
@@ -114,12 +111,34 @@
   :init-value nil
   :keymap hy-overrides-mode-map)
 
-;; 3. M-SPC 단축키를 이 오버라이딩 맵에 강제 지정
-;; 어떤 Major mode(org-mode 등)에 있더라도, 한글 입력 상태와 상관없이 
-;; M-SPC를 누르면 무조건 IME가 비활성화되면서 최상위 마스터 맵이 열립니다.
 (define-key hy-overrides-mode-map (kbd "M-o") #'hy/prefix-with-ime-deactivation)
 
-;; 4. 마이너 모드 활성화 (Emacs 구동 시 자동 켜짐)
+;; ;; =====================================================================
+;; ;;; C-c 계통 개별 서브 메뉴 직통 단축키 설정
+;; ;; =====================================================================
+;; (defun hy/invoke-sub-prefix-map (map-sym)
+;;   "Show the given MAP-SYM keymap immediately and set it as a transient map."
+;;   (let ((map (symbol-value map-sym)))
+;;     (which-key-show-keymap map-sym map)
+;;     (set-transient-map map nil nil)))
+
+;; (let ((bindings '(("C-c b" "Buffer"    . hy-buffer-prefix-map)
+;;                   ("C-c e" "Edit"      . hy-edit-prefix-map)
+;;                   ("C-c f" "Finishing" . hy-finishing-prefix-map)
+;;                   ("C-c l" "Life"      . hy-life-prefix-map)
+;;                   ("C-c m" "Media"     . hy-media-prefix-map)
+;;                   ("C-c o" "ORG"       . hy-org-prefix-map)
+;;                   ("C-c s" "Search"    . hy-search-prefix-map)
+;;                   ("C-c w" "Window"    . hy-window-prefix-map))))
+;;   (pcase-dolist (`(,key ,label . ,map) bindings)
+;;     (define-key hy-overrides-mode-map (kbd key)
+;;                 (lambda () 
+;;                   (interactive) 
+;;                   (hy/invoke-sub-prefix-map map)))
+;;     (which-key-add-keymap-based-replacements hy-overrides-mode-map key label)))
+
+;; (define-key hy-overrides-mode-map (kbd "C-c r") #'jump-to-register)
+
 (hy-overrides-mode 1)
 
 (provide 'hy-keys)

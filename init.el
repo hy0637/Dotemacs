@@ -146,19 +146,21 @@
 (when hy-macOS-p
   ;; [왼쪽] Opt(Super) / Cmd(Meta)
   (setq ns-option-modifier 'super)
-  (setq ns-command-modifier 'meta)
-  (setq ns-right-option-modifier 'control))
+  (setq ns-command-modifier 'meta))
+  ;; (setq ns-function-modifier 'hyper)
+  ;; (setq ns-right-option-modifier 'control)
 
 
 ;; =======================================
 ;;; Emacs UI and behavior & Dropbox Config
 ;; =======================================
 (use-package emacs
+  :ensure nil
   :init
   (setq default-directory (dropbox/dir "org")
         temporary-file-directory (emacs/dir "tmp/"))
 
-  :hook ((text-mode     . visual-line-mode))
+  :hook ((text-mode . visual-line-mode))
   
   :custom
   ;; Dropbox sync 충돌 방지 (경로 로컬 격리)
@@ -201,7 +203,6 @@
   (kill-whole-line 1)
   (next-line-add-newlines nil)
   (enable-recursive-minibuffers t)
-  ;; (context-menu-mode 1)
 
   :config
   (global-font-lock-mode 1)
@@ -215,17 +216,18 @@
       (make-directory dir t)))
   
   :bind
-  (("C-x <up>"    . toggle-frame-fullscreen)      ; 위: 전체 화면 토글
-   ("C-x <left>"  . hy/tile-frame-left)           ; 좌: 왼쪽 배치
-   ("C-x <right>" . hy/tile-frame-right)          ; 우: 오른쪽 배치
-   ("C-x <down>"  . hy/tile-frame-center)         ; 아래: 중앙 배치
-   ("C-x 0"       . hy/simple-delete-window-dwim)
-   ("C-z"         . hy/repeat-last-mx-command)
-   ;; ("M-o"         . hy/prefix-with-ime-deactivation) ; M-o로 마스터 키맵 단일 호출
-   ("M-;"         . comment-line)
-   ("M-s u"       . hy/search-unified)
-   ("C-a"         . hy/smart-beginning-of-line)
-   ("C-g"         . hy/keyboard-quit-dwim)))
+  (("C-x 0"    . hy/simple-delete-window-dwim)
+   ("C-x f"    . hy/tile-frame-dwim)
+   ("C-c s"    . hy/search-dwim)
+   ("M-;"      . comment-line)
+   ("C-a"      . hy/smart-beginning-of-line)
+   ("C-g"      . hy/keyboard-quit-dwim)
+   (;; Ctrl 조합을 '단어 단위 이동'으로 전격 전환
+   ("C-f"      . forward-word)
+   ("C-b"      . backward-word)
+   ;; 원래의 '한 글자 미세 이동' M-f / M-b 자리에 백업
+   ("M-f"      . forward-char)
+   ("M-b"      . backward-char))))
   
 
 (use-package time
@@ -291,6 +293,7 @@
 ;;; Locale and Korean settings
 ;; =======================================
 (use-package emacs
+  :ensure nil
   :init
   (setenv "LANG" "ko_KR.UTF-8")
   (setenv "LC_COLLATE" "C")

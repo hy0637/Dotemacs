@@ -51,7 +51,7 @@
 
 
 (defun hy/fd-filename-search (query)
-  "Search file names using fd (NFD-safe on macOS) with Consult UI and Preview.
+  "Search file names using fd (NFD-safe on macOS) with Consult UI & Preview.
 PDF files are excluded from Emacs buffer preview and open only in macOS Preview app."
   (interactive "s검색어: ")
   (let* ((path-choice (completing-read "Search in: "
@@ -85,15 +85,19 @@ PDF files are excluded from Emacs buffer preview and open only in macOS Preview 
 
 
 (defun hy/rga-skim-search (&optional query)
-  "Search PDF contents using `rga` and open in Skim."
+  "Search PDF contents using `rga` and open in Skim.
+Dependency:
+  - ripgrep-all (`brew install ripgrep-all`)
+  - poppler (`brew install poppler`) : pdftotext 지원용"
   (interactive)
   (let* ((pdf-target (assoc "PDF Files" hy/search-path-targets))
-         (default-directory (expand-file-name (cdr pdf-target)))
+         (pdf-dir (expand-file-name (cdr pdf-target)))
+         (default-directory pdf-dir)
          (search-term (or query (read-string "Search PDFs: ")))
-         ;; 쉘 파이프라인 에러 방지를 위해 process-lines 활용
-         (results (process-lines "rga" "-l" search-term ".")))
+         (results (ignore-errors (process-lines "rga" "-l" search-term "."))))
+    
     (if (null results)
-        (message "결과 없음: '%s'" search-term)
+        (message "결과 없음: '%s' (rga 또는 brew install poppler 설치 여부 확인)" search-term)
       (catch 'exit
         (while t
           (let ((selected-file
@@ -102,20 +106,20 @@ PDF files are excluded from Emacs buffer preview and open only in macOS Preview 
                    (quit (throw 'exit nil)))))
             (condition-case nil
                 (let* ((full-path (expand-file-name selected-file default-directory))
-                       ;; 개별 파일 내부 줄 검색
-                       (lines (process-lines "rga" "-n" search-term full-path))
-                       (selected-line (completing-read "결과 내 이동 (C-g=뒤로): " lines nil t)))
+                       (lines (ignore-errors (process-lines "rga" "-n" search-term full-path)))
+                       (selected-line (completing-read "결과 내 이동 (C-g=뒤로): " lines nil t))
+                       (page-num (when (and selected-line (string-match "Page \\([0-9]+\\)" selected-line))
+                                   (string-to-number (match-string 1 selected-line)))))
+                  
                   (kill-new search-term)
-                  (let ((page-num (when (string-match "Page \\([0-9]+\\)" selected-line)
-                                    (string-to-number (match-string 1 selected-line)))))
-                    (if page-num
-                        (do-applescript
-                         (format "tell application \"Skim\"
-                                       activate
-                                       open POSIX file \"%s\"
-                                       tell front document to go to page %d
-                                  end tell" full-path page-num))
-                      (call-process "open" nil 0 nil full-path)))
+                  (if page-num
+                      (do-applescript
+                       (format "tell application \"Skim\"
+                                     activate
+                                     open POSIX file \"%s\"
+                                     tell front document to go to page %d
+                                end tell" full-path page-num))
+                    (call-process "open" nil 0 nil full-path))
                   (throw 'exit nil))
               (quit (message "파일 목록으로 복귀")))))))))
 
@@ -176,6 +180,42 @@ Select between Web engines or Local paths for the given QUERY."
   (let ((target-maps (list embark-identifier-map embark-region-map)))
     (dolist (map target-maps)
       (define-key map (kbd "S") #'hy/search-unified))))
+
+
+;; ======================================
+;;; Transient Dispatcher
+;; ======================================
+
+;;;###autoload
+(defun hy/search-dwim ()
+  "검색 대기 모드 (C-c s)
+
+   [u / s] 통합 검색 (웹/로컬)
+   [f / n] 파일명 검색 (fd)
+   [p / r] PDF 본문 검색 (rga + Skim)
+   [d]     macOS 사전 검색"
+  (interactive)
+  (message "검색 모드: [u/s]통합검색 | [f/n]파일명 | [p/r]PDF본문 | [d]사전 (종료: 다른키)")
+  (set-transient-map
+   (let ((map (make-sparse-keymap)))
+     ;; 1. 통합 검색 (Unified Search)
+     (define-key map (kbd "u") #'hy/search-unified)
+     (define-key map (kbd "s") #'hy/search-unified)
+
+     ;; 2. 파일명 검색 (Filename Search)
+     (define-key map (kbd "f") (lambda () (interactive) (call-interactively #'hy/fd-filename-search)))
+     (define-key map (kbd "n") (lambda () (interactive) (call-interactively #'hy/fd-filename-search)))
+
+     ;; 3. PDF 본문 검색 (RGA + Skim)
+     (define-key map (kbd "p") #'hy/rga-skim-search)
+     (define-key map (kbd "r") #'hy/rga-skim-search)
+
+     ;; 4. macOS 사전 단독 검색
+     (define-key map (kbd "d") (lambda () 
+                                 (interactive) 
+                                 (let ((word (read-string "사전 검색: " (thing-at-point 'symbol t))))
+                                   (hy--open-url (hy/get-search-url "macOS Dictionary" word)))))
+     map)))
 
 (provide 'hy-search)
 ;;; hy-search.el ends here
