@@ -47,7 +47,7 @@ excluding the Dock and Menu bar."
                               (hy/tile-frame-dwim))) ; 실행 후 대기모드 유지
             (action-resize  (lambda () (interactive)
                               ;; 리사이즈는 자체 대기 루프가 있으므로, 
-                              ;; 프레임 스냅 모드를 끝내면서 리사이즈 모드로 바통을 넘깁니다.
+                              ;; 프레임 스냅 모드를 끝내면서 리사이즈 모드로 전환.
                               (hy/interactive-window-resize-all))))
 
        ;; 방향 및 이동 바인딩

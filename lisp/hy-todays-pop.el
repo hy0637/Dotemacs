@@ -432,8 +432,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
         
         (let ((map (make-sparse-keymap)))
           (set-keymap-parent map (current-local-map))
-          (define-key map (kbd "q") 
-            (lambda () (interactive) (kill-this-buffer)))
+	  (define-key map (kbd "q") #'kill-current-buffer)
           (use-local-map map))))
 
     (message "Today's info loaded in %.2f seconds"
@@ -470,8 +469,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
         (goto-char (point-min))
         (let ((map (make-sparse-keymap)))
           (set-keymap-parent map (current-local-map))
-          (define-key map (kbd "q")
-            (lambda () (interactive) (kill-this-buffer)))
+	  (define-key map (kbd "q") #'kill-current-buffer)
           (use-local-map map))))
     (switch-to-buffer buffer)))
 
@@ -499,8 +497,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
         (goto-char (point-min))
         (let ((map (make-sparse-keymap)))
           (set-keymap-parent map (current-local-map))
-          (define-key map (kbd "q")
-            (lambda () (interactive) (kill-this-buffer)))
+	  (define-key map (kbd "q") #'kill-current-buffer)
           (define-key map (kbd "r")
             (lambda () (interactive) (hy/show-random-quote)))
           (use-local-map map))))
@@ -530,8 +527,7 @@ Returns (TODAY-WEATHER . WEEKLY-WEATHER) cons cell."
           (goto-char (point-min))
           (let ((map (make-sparse-keymap)))
             (set-keymap-parent map (current-local-map))
-            (define-key map (kbd "q")
-              (lambda () (interactive) (kill-this-buffer)))
+	    (define-key map (kbd "q") #'kill-current-buffer)
             (define-key map (kbd "r")
               (lambda () (interactive)
                 (setq hy/--weather-cache nil)
