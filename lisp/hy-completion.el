@@ -98,57 +98,121 @@
 ;; =======================================
 ;;; Hanspell
 ;; =======================================
+(defvar hy/spell-report-mode-map
+  (let ((m (make-sparse-keymap)))
+    (set-keymap-parent m special-mode-map)
+    (define-key m (kbd "SPC") #'push-button)
+    (define-key m (kbd "q") (lambda () (interactive) (quit-window t)))
+    m)
+  "맞춤법 리포트 버퍼 전용 키맵.")
+
+(define-derived-mode hy/spell-report-mode special-mode "SpellReport"
+  "한국어 맞춤법 검사 리포트 버퍼용 모드.")
+
 ;;;###autoload
 (defun hy/org-korean-spellcheck-region (beg end)
-  "선택한 영역의 맞춤법 교정 리포트를 별도 버퍼에 띄워 검토.
-교정할 내용이 없으면 메시지만 표시하고 종료."
-  ;; brew install node
-  ;; npm install -g hanspell
+  "선택한 영역의 맞춤법 검사, 스페이스바(SPC)로 적용 및 취소 토글 대화형 리포트 버퍼 생성."
   (interactive "r")
   (let* ((hanspell-path "/opt/homebrew/bin/hanspell-cli")
          (cmd (or (executable-find "hanspell-cli")
                   (and (file-executable-p hanspell-path) hanspell-path)))
          (buf-name "*Korean Spell Check*")
          (text (buffer-substring-no-properties beg end))
+         ;; beg와 end 모두 마커로 처리, 문서 편집 중 위치 밀림 방지
+         (beg (copy-marker beg nil))
+         (end (copy-marker end t))
+         (orig-buffer (current-buffer))
          raw-output)
-    
+
     (unless cmd
-      (user-error "hanspell-cli를 찾을 수 없습니다. 'npm install -g hanspell' 설치 상태를 확인하세요."))
-    
+      (user-error "hanspell-cli를 찾을 수 없습니다. 'npm install -g hanspell' 설치 상태 확인!"))
+
     ;; 1. hanspell 결과 가져오기
-    (setq raw-output (shell-command-to-string 
-                      (format "echo %s | %s -n" (shell-quote-argument text) cmd)))
-    
-    ;; 결과물에 교정 기호(->)가 없거나 비어있다면 오타가 없는 것임
-    (if (or (string-empty-p (string-trim raw-output))
-            (not (string-match-p "->" raw-output)))
-        (message "✨ 맞춤법이 완벽합니다! 교정할 내용이 없습니다.")
-      
-      ;; 2. 오타가 있을 때만 가독성 개선 및 팝업창 생성
-      (setq raw-output (replace-regexp-in-string "오류입니다\\." "오류입니다. 🚨\n" raw-output))
-      (setq raw-output (replace-regexp-in-string "추천입니다\\." "추천입니다. 💡\n" raw-output))
-      
+    (setq raw-output (shell-command-to-string
+                      (format "printf %%s %s | %s -n" (shell-quote-argument text) cmd)))
+
+    (if (not (string-match-p "->" raw-output))
+        (message "✨ 맞춤법이 완벽! 교정할 내용 없습니다.")
+
+      ;; 2. 버퍼 생성, 설정
       (with-current-buffer (get-buffer-create buf-name)
-        (read-only-mode -1)
-        (erase-buffer)
-        ;; org-mode 적용 후 q 키 바인딩 설정
-        (special-mode) ; q로 닫기 편리하고 안전한 기본 모드 사용 (필요시 org-mode 유지 가능)
         (let ((inhibit-read-only t))
-          (insert raw-output)
-          (goto-char (point-min)))
-        
-        ;; q를 누르면 리포트 창을 안전하게 닫고 원래 버퍼/창으로 복귀
-        (local-set-key (kbd "q") 
-                       (lambda () 
-                         (interactive)
-                         (let ((buf (current-buffer)))
-                           (quit-restore-window nil 'kill)
-                           (when (buffer-live-p buf)
-                             (kill-buffer buf))))))
-      
+          (erase-buffer)
+          (insert "=== [ Korean Spell Check Report ] ===\n")
+          (insert "스페이스바(SPC) 눌러 오타 교정 적용/취소를 토글하세요. (종료: q)\n\n")
+
+          ;; hanspell 결과 파싱 후 토글 버튼 생성
+          (dolist (line (split-string raw-output "\n" t))
+            (let ((trimmed (string-trim line)))
+              (when (string-match-p "->" trimmed)
+                (let* ((clean-str (replace-regexp-in-string "^✔︎ " "" trimmed))
+                       (parts (split-string clean-str "->" t " \t"))
+                       (wrong (string-trim (car parts)))
+                       (right (string-trim (cadr parts))))
+                  (when (and wrong right)
+                    (insert-text-button
+                     (format "🔹 %s -> %s" wrong right)
+                     'action (lambda (btn)
+                               (let* ((applied (button-get btn 'applied))
+                                      (w (button-get btn 'wrong))
+                                      (r (button-get btn 'right))
+                                      (act (button-get btn 'action))
+                                      (success nil)
+                                      (report-point (point))) ; 리포트 버퍼 커서 위치 백업
+                                 ;; 원본 버퍼에서 텍스트 치환 수행
+                                 (with-current-buffer orig-buffer
+                                   (save-excursion
+                                     (goto-char beg)
+                                     (if (not applied)
+                                         ;; 적용하기: wrong -> right
+                                         (if (search-forward w end t)
+                                             (progn
+                                               (replace-match r t t)
+                                               (setq success t)
+                                               (message "✅ 교정 적용: '%s' -> '%s'" w r))
+                                           (message "⚠️ 영역 내에서 '%s'를 찾지 못했습니다." w))
+                                       ;; 취소하기: right -> wrong
+                                       (if (search-forward r end t)
+                                           (progn
+                                             (replace-match w t t)
+                                             (setq success t)
+                                             (message "↩️ 교정 취소: '%s' -> '%s'" r w))
+                                         (message "⚠️ 영역 내에서 적용된 단어 '%s'를 찾지 못했습니다." r)))))
+
+                                 ;; 치환 성공 시 버튼 상태 및 레이블 갱신 (토글)
+                                 (when success
+                                   (let ((new-applied (not applied)))
+                                     (let ((inhibit-read-only t))
+                                       (save-excursion
+                                         (goto-char (button-start btn))
+                                         (let ((b-start (button-start btn))
+                                               (b-end (button-end btn)))
+                                           (delete-region b-start b-end)
+                                           (insert-text-button
+                                            (if new-applied
+                                                (format "✅ [적용됨] %s -> %s" w r)
+                                              (format "🔹 %s -> %s" w r))
+                                            'action act
+                                            'wrong w
+                                            'right r
+                                            'applied new-applied
+                                            'help-echo "스페이스바 눌러 적용/취소를 토글."
+                                            'face (if new-applied 'shadow 'link))))
+                                         ;; 버튼 갱신 후 리포트 버퍼 커서 위치 복원 시도
+                                         (goto-char (min report-point (point-max))))))))
+                     'wrong wrong
+                     'right right
+                     'applied nil
+                     'help-echo "스페이스바 눌러 적용/취소를 토글."
+                     'face 'link)
+                    (insert "\n"))))))
+
+          (goto-char (point-min))
+          (hy/spell-report-mode)))
+
       ;; 팝업 창 출력
       (pop-to-buffer buf-name)
-      (message "맞춤법 검사 완료! 검토 후 'q'를 눌러 닫으세요."))))
+      (message "맞춤법 검사 완료! SPC로 토글, q로 닫기"))))
 
 
 ;; =======================================
